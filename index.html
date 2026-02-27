@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sistema PDA — Login Controlado</title>
+<style>
+body { font-family: Arial; text-align: center; background: #f2f2f2; }
+.container { margin-top: 50px; }
+input { display: block; margin: 10px auto; padding: 10px; font-size: 18px; }
+button { padding: 10px 20px; font-size: 18px; margin: 5px; }
+#menuDiv { display: none; }
+#pdaLabel { font-size: 22px; font-weight: bold; margin-bottom: 20px; color: #333; }
+.error { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h2 id="pdaLabel">Cargando dispositivo...</h2>
+
+<div id="loginDiv">
+    <input type="text" id="usuario" placeholder="Usuario">
+    <input type="password" id="pin" placeholder="PIN">
+    <button id="loginButton" onclick="login()">Ingresar</button>
+    <p id="errorMsg" class="error"></p>
+</div>
+
+<div id="menuDiv">
+    <h2>Sesión iniciada</h2>
+    <p>Ahora puedes usar únicamente apps y URLs autorizadas</p>
+    <button onclick="abrirSGA()">Abrir SGA</button>
+    <button onclick="abrirCamara()">Abrir Cámara</button>
+    <button onclick="abrirGaleria()">Abrir Galería</button>
+    <button onclick="abrirURL('https://miempresa.com/dashboard')">Abrir URL</button>
+    <br><br>
+    <button onclick="cerrarTurno()">Cerrar Turno</button>
+</div>
+
+</div>
+
+<script>
+
+// === CONFIGURACIÓN SHEETY ===
+const BASE_URL = "https://api.sheety.co/TU_API/kioscoPdas";
+const USERS_URL = BASE_URL + "/usuarios";
+const DEVICE_URL = BASE_URL + "/dispositivos";
+const LOGIN_URL = BASE_URL + "/login";
+const LOGOUT_URL = BASE_URL + "/logout";
+
+let NUMERO_PDA = null;
+let DEVICE_VALIDO = false;
+
+function getDeviceId() { return navigator.userAgent; }
+
+function cargarNumeroPDA() {
+    fetch(DEVICE_URL)
+    .then(res => res.json())
+    .then(data => {
+        const deviceId = getDeviceId();
+        const dispositivo = data.dispositivos.find(d => d.device === deviceId);
+        if(dispositivo){
+            NUMERO_PDA = dispositivo.numeroPda;
+            DEVICE_VALIDO = true;
+            document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
+        } else {
+            DEVICE_VALIDO = false;
+            document.getElementById("pdaLabel").innerText = "DISPOSITIVO NO REGISTRADO";
+            document.getElementById("loginButton").disabled = true;
+        }
+    })
+    .catch(()=>{document.getElementById("pdaLabel").innerText="Error conexión servidor";});
+}
+
+window.onload = cargarNumeroPDA;
+
+function mostrarError(msg){ document.getElementById("errorMsg").innerText = msg; }
+
+// === FUNCION LOGIN ===
+function login(){
+    if(!DEVICE_VALIDO) return;
+    const usuario = document.getElementById('usuario').value.trim();
+    const pin = document.getElementById('pin').value.trim();
+    if(!usuario || !pin){ mostrarError("Ingrese usuario y PIN"); return; }
+
+    fetch(USERS_URL)
+    .then(res=>res.json())
+    .then(data=>{
+        const userValid = data.usuarios.find(u=>u.usuario===usuario && u.pin===pin);
+        if(!userValid){ mostrarError("Usuario o PIN incorrecto"); return; }
+
+        navigator.geolocation.getCurrentPosition(
+            (position)=>{
+                fetch(LOGIN_URL, {
+                    method:"POST",
+                    headers:{"Content-Type":"application/json"},
+                    body: JSON.stringify({
+                        login:{
+                            usuario:usuario,
+                            numeroPda:NUMERO_PDA,
+                            device:getDeviceId(),
+                            fecha:new Date().toISOString(),
+                            lat:position.coords.latitude,
+                            lon:position.coords.longitude
+                        }
+                    })
+                });
+
+                // Salida del kiosco tras login
+                if(typeof FullyKiosk!=="undefined"){ FullyKiosk.exitKioskMode(); }
+                document.getElementById('loginDiv').style.display="none";
+                document.getElementById('menuDiv').style.display="block";
+
+            },
+            ()=>mostrarError("No se pudo obtener ubicación"),
+            { enableHighAccuracy:true }
+        );
+    });
+}
+
+// === FUNCION BOTONES DE APPS AUTORIZADAS ===
+function abrirSGA(){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.launchApp("com.tuempresa.sga"); } }
+function abrirCamara(){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.launchApp("com.android.camera"); } }
+function abrirGaleria(){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.launchApp("com.android.gallery3d"); } }
+function abrirURL(url){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.loadUrl(url); } }
+
+// === FUNCION CERRAR TURNO ===
+function cerrarTurno(){
+    navigator.geolocation.getCurrentPosition(
+        (position)=>{
+            fetch(LOGOUT_URL,{
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body: JSON.stringify({
+                    logout:{
+                        numeroPda:NUMERO_PDA,
+                        device:getDeviceId(),
+                        fecha:new Date().toISOString(),
+                        lat:position.coords.latitude,
+                        lon:position.coords.longitude
+                    }
+                })
+            });
+
+            // Volver a bloquear con Fully Kiosk
+            if(typeof FullyKiosk!=="undefined"){ FullyKiosk.startKioskMode(); }
+
+            document.getElementById('menuDiv').style.display="none";
+            document.getElementById('loginDiv').style.display="block";
+        }
+    );
+}
+
+</script>
+
+</body>
+</html>
