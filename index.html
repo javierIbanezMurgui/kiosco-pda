@@ -60,12 +60,20 @@ function getDeviceId(){
 let NUMERO_PDA = null;
 let DEVICE_VALIDO = false;
 
+// ===== CARGAR NUMERO DE PDA =====
 function cargarNumeroPDA() {
     fetch(DEVICE_URL)
     .then(res => res.json())
     .then(data => {
         const deviceId = getDeviceId();
-        const dispositivo = data.find(d => d.device === deviceId);
+        const lista = data.dispositivos;
+
+        if(!lista){
+            document.getElementById("pdaLabel").innerText = "Error datos API";
+            return;
+        }
+
+        const dispositivo = lista.find(d => d.device === deviceId);
 
         if(dispositivo){
             NUMERO_PDA = dispositivo.numeroPda;
@@ -77,15 +85,12 @@ function cargarNumeroPDA() {
             document.getElementById("loginButton").disabled = true;
         }
     })
-    .catch(()=>{document.getElementById("pdaLabel").innerText="Error conexión servidor";});
+    .catch(()=>{
+        document.getElementById("pdaLabel").innerText="Error conexión servidor";
+    });
 }
 
-// ===== ALERT TEMPORAL PARA VER DEVICE ID =====
-window.onload = function(){
-    alert("DEVICE ID: " + getDeviceId());
-    cargarNumeroPDA();
-};
-
+// ===== MOSTRAR ERROR =====
 function mostrarError(msg){ document.getElementById("errorMsg").innerText = msg; }
 
 // ===== LOGIN =====
@@ -99,7 +104,7 @@ function login(){
     fetch(USERS_URL)
     .then(res=>res.json())
     .then(data=>{
-        const userValid = data.find(u=>u.usuario===usuario && u.pin===pin);
+        const userValid = data.usuarios.find(u=>u.usuario===usuario && u.pin===pin);
         if(!userValid){ mostrarError("Usuario o PIN incorrecto"); return; }
 
         navigator.geolocation.getCurrentPosition(
@@ -122,6 +127,7 @@ function login(){
 
                 document.getElementById('loginDiv').style.display="none";
                 document.getElementById('menuDiv').style.display="block";
+
             },
             ()=>mostrarError("No se pudo obtener ubicación"),
             { enableHighAccuracy:true }
@@ -177,6 +183,9 @@ function cerrarTurno(){
         }
     );
 }
+
+// ===== INICIAR =====
+window.onload = cargarNumeroPDA;
 
 </script>
 
