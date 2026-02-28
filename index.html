@@ -146,7 +146,35 @@ function abrirApp(pkg) {
 }
 
 async function cerrarTurno() {
-    location.reload();
+    if(!confirm("¿Deseas finalizar el turno y cerrar sesión?")) return;
+    
+    const label = document.getElementById("pdaLabel");
+    label.innerText = "CERRANDO SESIÓN...";
+    document.getElementById("menuDiv").style.display = "none";
+    document.getElementById("loader").style.display = "block";
+
+    try {
+        // Enviamos los datos a la hoja de LOGOUT antes de recargar
+        await fetch(URL_LOGOUT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                logout: { 
+                    usuario: USUARIO_ACTUAL, 
+                    numeroPda: NUMERO_PDA, 
+                    device: DEVICE_ID_REAL, 
+                    fecha: new Date().toLocaleString() 
+                } 
+            })
+        });
+        console.log("Cierre de sesión registrado en Sheety");
+    } catch(e) { 
+        console.error("Error al registrar logout:", e); 
+        alert("Error de red al cerrar turno, pero se reiniciará la sesión.");
+    } finally {
+        // Solo recargamos cuando el envío ha terminado (o ha fallado)
+        location.reload(); 
+    }
 }
 
 // Esperamos 1 segundo para que la tablet cargue sus funciones internas
