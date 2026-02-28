@@ -140,11 +140,14 @@ async function login() {
 }
 
 function abrirApp(pkg) {
-    if (typeof fully !== "undefined") fully.launchApp(pkg);
-    else if (typeof FullyKiosk !== "undefined") FullyKiosk.launchApp(pkg);
-    else alert("Abriendo: " + pkg);
+    if (typeof fully !== "undefined" && fully.launchApp) {
+        fully.launchApp(pkg);
+    } else if (typeof FullyKiosk !== "undefined" && FullyKiosk.launchApp) {
+        FullyKiosk.launchApp(pkg);
+    } else {
+        alert("Simulación en PC: Abriendo " + pkg);
+    }
 }
-
 async function cerrarTurno() {
     if(!confirm("¿Deseas finalizar el turno y cerrar sesión?")) return;
     
