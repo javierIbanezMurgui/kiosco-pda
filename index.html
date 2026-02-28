@@ -54,7 +54,11 @@
 
         <div id="menuDiv">
             <h3 id="userTag" style="color: var(--success);">Sesión Activa</h3>
-            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR SGA</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR CD MUELLES</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR GALERIA</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES_RECEPCION</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR CAMARA</button>
             <button class="btn-logout" onclick="cerrarTurno()" style="background-color: var(--danger);">CERRAR TURNO</button>
         </div>
     </div>
@@ -73,7 +77,7 @@ let USUARIO_ACTUAL = null;
 function getDeviceId() {
     if (typeof fully !== "undefined" && fully.getDeviceId) return fully.getDeviceId();
     if (typeof FullyKiosk !== "undefined" && FullyKiosk.getDeviceId) return FullyKiosk.getDeviceId();
-    return "BROWSER_TEST_123"; 
+    return "PDA_TEST"; 
 }
 
 function mostrarError(msg) {
