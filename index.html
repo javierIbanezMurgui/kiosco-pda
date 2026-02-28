@@ -4,57 +4,81 @@
 <meta charset="UTF-8">
 <title>Sistema PDA — Login Controlado</title>
 <style>
-body { font-family: Arial; text-align: center; background: #f2f2f2; }
-.container { margin-top: 50px; }
-input { display: block; margin: 10px auto; padding: 10px; font-size: 18px; }
-button { padding: 10px 20px; font-size: 18px; margin: 5px; }
+/* ===== PANTALLA COMPLETA ===== */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+input, button {
+    width: 80%;
+    max-width: 400px;
+    font-size: 20px;
+    padding: 10px;
+    margin: 5px 0;
+}
+
+button {
+    cursor: pointer;
+}
+
 #menuDiv { display: none; }
-#pdaLabel { font-size: 22px; font-weight: bold; margin-bottom: 20px; color: #333; }
+#pdaLabel { font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px; }
 .error { color: red; font-weight: bold; }
 </style>
 </head>
 <body>
 
 <div class="container">
+    <h2 id="pdaLabel">Cargando dispositivo...</h2>
 
-<h2 id="pdaLabel">Cargando dispositivo...</h2>
+    <div id="loginDiv">
+        <input type="text" id="usuario" placeholder="Usuario">
+        <input type="password" id="pin" placeholder="PIN">
+        <button id="loginButton" onclick="login()">Ingresar</button>
+        <p id="errorMsg" class="error"></p>
+    </div>
 
-<div id="loginDiv">
-    <input type="text" id="usuario" placeholder="Usuario">
-    <input type="password" id="pin" placeholder="PIN">
-    <button id="loginButton" onclick="login()">Ingresar</button>
-    <p id="errorMsg" class="error"></p>
-</div>
-
-<div id="menuDiv">
-    <h2>Sesión iniciada</h2>
-    <p>Ahora puedes usar únicamente apps y URLs autorizadas</p>
-    <button onclick="abrirSGA()">Abrir SGA</button>
-    <button onclick="abrirCamara()">Abrir Cámara</button>
-    <button onclick="abrirGaleria()">Abrir Galería</button>
-    <button onclick="abrirURL('https://miempresa.com/dashboard')">Abrir URL</button>
-    <br><br>
-    <button onclick="cerrarTurno()">Cerrar Turno</button>
-</div>
-
+    <div id="menuDiv">
+        <h2>Sesión iniciada</h2>
+        <p>Ahora puedes usar únicamente apps y URLs autorizadas</p>
+        <button onclick="abrirSGA()">Abrir SGA</button>
+        <button onclick="abrirCamara()">Abrir Cámara</button>
+        <button onclick="abrirGaleria()">Abrir Galería</button>
+        <button onclick="abrirURL('https://miempresa.com/dashboard')">Abrir URL</button>
+        <br><br>
+        <button onclick="cerrarTurno()">Cerrar Turno</button>
+    </div>
 </div>
 
 <script>
-
-// ===== CONFIGURA TU API AQUÍ =====
+// ===== CONFIGURA TU API =====
 const BASE_URL = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas";
 const USERS_URL = BASE_URL + "/usuarios";
 const DEVICE_URL = BASE_URL + "/dispositivos";
 const LOGIN_URL = BASE_URL + "/login";
 const LOGOUT_URL = BASE_URL + "/logout";
 
-// ===== DEVICE ID PROFESIONAL =====
+// ===== DEVICE ID =====
 function getDeviceId(){
-  if(typeof FullyKiosk !== "undefined"){
-      return FullyKiosk.getDeviceId();
-  } else {
-      return "NO_FULLY";
-  }
+    if(typeof FullyKiosk !== "undefined"){
+        return FullyKiosk.getDeviceId();
+    } else {
+        return "NO_FULLY";
+    }
 }
 
 let NUMERO_PDA = null;
@@ -67,12 +91,6 @@ function cargarNumeroPDA() {
     .then(data => {
         const deviceId = getDeviceId();
         const lista = data.dispositivos;
-
-        if(!lista){
-            document.getElementById("pdaLabel").innerText = "Error datos API";
-            return;
-        }
-
         const dispositivo = lista.find(d => d.device === deviceId);
 
         if(dispositivo){
@@ -109,7 +127,6 @@ function login(){
 
         navigator.geolocation.getCurrentPosition(
             (position)=>{
-
                 fetch(LOGIN_URL, {
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
@@ -137,27 +154,27 @@ function login(){
 
 // ===== BOTONES =====
 function abrirSGA(){
-  if(typeof FullyKiosk!=="undefined"){
-    FullyKiosk.launchApp("com.tuempresa.sga");
-  }
+    if(typeof FullyKiosk!=="undefined"){
+        FullyKiosk.launchApp("com.tuempresa.sga");
+    }
 }
 
 function abrirCamara(){
-  if(typeof FullyKiosk!=="undefined"){
-    FullyKiosk.launchApp("com.android.camera");
-  }
+    if(typeof FullyKiosk!=="undefined"){
+        FullyKiosk.launchApp("com.android.camera");
+    }
 }
 
 function abrirGaleria(){
-  if(typeof FullyKiosk!=="undefined"){
-    FullyKiosk.launchApp("com.android.gallery3d");
-  }
+    if(typeof FullyKiosk!=="undefined"){
+        FullyKiosk.launchApp("com.android.gallery3d");
+    }
 }
 
 function abrirURL(url){
-  if(typeof FullyKiosk!=="undefined"){
-    FullyKiosk.loadUrl(url);
-  }
+    if(typeof FullyKiosk!=="undefined"){
+        FullyKiosk.loadUrl(url);
+    }
 }
 
 // ===== CERRAR TURNO =====
@@ -184,9 +201,18 @@ function cerrarTurno(){
     );
 }
 
-// ===== INICIAR =====
-window.onload = cargarNumeroPDA;
+// ===== FULLSCREEN =====
+function goFullScreen(){
+    const el = document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen();
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if(el.msRequestFullscreen) el.msRequestFullscreen();
+}
 
+window.onload = function(){
+    cargarNumeroPDA();
+    goFullScreen();
+};
 </script>
 
 </body>
