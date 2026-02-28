@@ -41,24 +41,32 @@ button { padding: 10px 20px; font-size: 18px; margin: 5px; }
 
 <script>
 
-// === CONFIGURACIÓN SHEETY ===
+// ===== CONFIGURA TU API AQUÍ =====
 const BASE_URL = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas";
 const USERS_URL = BASE_URL + "/usuarios";
 const DEVICE_URL = BASE_URL + "/dispositivos";
 const LOGIN_URL = BASE_URL + "/login";
 const LOGOUT_URL = BASE_URL + "/logout";
 
+// ===== DEVICE ID PROFESIONAL =====
+function getDeviceId(){
+  if(typeof FullyKiosk !== "undefined"){
+      return FullyKiosk.getDeviceId();
+  } else {
+      return "NO_FULLY";
+  }
+}
+
 let NUMERO_PDA = null;
 let DEVICE_VALIDO = false;
-
-function getDeviceId() { return navigator.userAgent; }
 
 function cargarNumeroPDA() {
     fetch(DEVICE_URL)
     .then(res => res.json())
     .then(data => {
         const deviceId = getDeviceId();
-        const dispositivo = data.dispositivos.find(d => d.device === deviceId);
+        const dispositivo = data.find(d => d.device === deviceId);
+
         if(dispositivo){
             NUMERO_PDA = dispositivo.numeroPda;
             DEVICE_VALIDO = true;
@@ -72,13 +80,18 @@ function cargarNumeroPDA() {
     .catch(()=>{document.getElementById("pdaLabel").innerText="Error conexión servidor";});
 }
 
-window.onload = cargarNumeroPDA;
+// ===== ALERT TEMPORAL PARA VER DEVICE ID =====
+window.onload = function(){
+    alert("DEVICE ID: " + getDeviceId());
+    cargarNumeroPDA();
+};
 
 function mostrarError(msg){ document.getElementById("errorMsg").innerText = msg; }
 
-// === FUNCION LOGIN ===
+// ===== LOGIN =====
 function login(){
     if(!DEVICE_VALIDO) return;
+
     const usuario = document.getElementById('usuario').value.trim();
     const pin = document.getElementById('pin').value.trim();
     if(!usuario || !pin){ mostrarError("Ingrese usuario y PIN"); return; }
@@ -86,11 +99,12 @@ function login(){
     fetch(USERS_URL)
     .then(res=>res.json())
     .then(data=>{
-        const userValid = data.usuarios.find(u=>u.usuario===usuario && u.pin===pin);
+        const userValid = data.find(u=>u.usuario===usuario && u.pin===pin);
         if(!userValid){ mostrarError("Usuario o PIN incorrecto"); return; }
 
         navigator.geolocation.getCurrentPosition(
             (position)=>{
+
                 fetch(LOGIN_URL, {
                     method:"POST",
                     headers:{"Content-Type":"application/json"},
@@ -106,11 +120,8 @@ function login(){
                     })
                 });
 
-                // Salida del kiosco tras login
-                if(typeof FullyKiosk!=="undefined"){ FullyKiosk.exitKioskMode(); }
                 document.getElementById('loginDiv').style.display="none";
                 document.getElementById('menuDiv').style.display="block";
-
             },
             ()=>mostrarError("No se pudo obtener ubicación"),
             { enableHighAccuracy:true }
@@ -118,13 +129,32 @@ function login(){
     });
 }
 
-// === FUNCION BOTONES DE APPS AUTORIZADAS ===
-function abrirSGA(){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.launchApp("com.tuempresa.sga"); } }
-function abrirCamara(){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.launchApp("com.android.camera"); } }
-function abrirGaleria(){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.launchApp("com.android.gallery3d"); } }
-function abrirURL(url){ if(typeof FullyKiosk!=="undefined"){ FullyKiosk.loadUrl(url); } }
+// ===== BOTONES =====
+function abrirSGA(){
+  if(typeof FullyKiosk!=="undefined"){
+    FullyKiosk.launchApp("com.tuempresa.sga");
+  }
+}
 
-// === FUNCION CERRAR TURNO ===
+function abrirCamara(){
+  if(typeof FullyKiosk!=="undefined"){
+    FullyKiosk.launchApp("com.android.camera");
+  }
+}
+
+function abrirGaleria(){
+  if(typeof FullyKiosk!=="undefined"){
+    FullyKiosk.launchApp("com.android.gallery3d");
+  }
+}
+
+function abrirURL(url){
+  if(typeof FullyKiosk!=="undefined"){
+    FullyKiosk.loadUrl(url);
+  }
+}
+
+// ===== CERRAR TURNO =====
 function cerrarTurno(){
     navigator.geolocation.getCurrentPosition(
         (position)=>{
@@ -141,9 +171,6 @@ function cerrarTurno(){
                     }
                 })
             });
-
-            // Volver a bloquear con Fully Kiosk
-            if(typeof FullyKiosk!=="undefined"){ FullyKiosk.startKioskMode(); }
 
             document.getElementById('menuDiv').style.display="none";
             document.getElementById('loginDiv').style.display="block";
