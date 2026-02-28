@@ -9,13 +9,15 @@
         html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: sans-serif; background-color: var(--bg); }
         .container { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
         .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        #pdaLabel { font-size: 20px; margin-bottom: 20px; color: #333; font-weight: bold; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        #pdaLabel { font-size: 22px; margin-bottom: 20px; color: #333; font-weight: bold; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
         input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: var(--primary); color: white; }
-        button:disabled { background-color: #ccc; }
+        button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: var(--primary); color: white; transition: 0.2s; }
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn-app { background-color: #6c757d; }
         .btn-logout { background-color: var(--danger); margin-top: 20px; }
         #menuDiv { display: none; }
-        .error { color: var(--danger); font-size: 14px; font-weight: bold; margin-top: 10px; }
+        .error { color: var(--danger); font-size: 14px; font-weight: bold; margin-top: 10px; min-height: 20px; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -30,89 +32,102 @@
         <div id="loginDiv">
             <input type="text" id="usuario" placeholder="Usuario">
             <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
-            <button id="loginButton" onclick="login()" disabled>INGRESAR</button>
+            <button id="loginButton" onclick="login()" disabled>INGRESAR AL TURNO</button>
             <p id="errorMsg" class="error"></p>
         </div>
 
         <div id="menuDiv">
-            <h3 id="userTag">Operario Activo</h3>
-            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR SGA</button>
-            <button onclick="abrirApp('com.android.camera')">CÁMARA</button>
-            <button class="btn-logout" onclick="cerrarTurno()">CERRAR TURNO</button>
+            <h3 id="userTag" style="color: var(--success);">Sesión Activa</h3>
+            <button class="btn-app" onclick="abrirApp('com.tuempresa.sga')">ABRIR SGA</button>
+            <button class="btn-app" onclick="abrirApp('com.android.camera')">ABRIR CÁMARA</button>
+            <button class="btn-logout" onclick="cerrarTurno()">FINALIZAR TURNO</button>
         </div>
     </div>
 </div>
 
 <script>
-// 1. CONFIGURACIÓN (ASEGÚRATE DE QUE ESTO COINCIDA CON SHEETY)
-const API_USER = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas"; // El código largo de tu URL de Sheety
-const PROJECT_NAME = "kioscoPdas"; 
-const BASE_URL = `https://api.sheety.co/${API_USER}/${PROJECT_NAME}`;
+// ===== TUS URLS DE SHEETY INTEGRADAS =====
+const URL_USUARIOS = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/usuarios";
+const URL_DISPOSITIVOS = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/dispositivos";
+const URL_LOGIN = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/login";
+const URL_LOGOUT = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/logout";
 
-// 2. DETECTAR ID DE DISPOSITIVO
+let NUMERO_PDA = null;
+let DEVICE_ID_REAL = "NO_DETECTADO";
+let USUARIO_ACTUAL = null;
+
+// Obtener ID real desde Fully Kiosk
 function getDeviceId() {
-    if (typeof FullyKiosk !== "undefined") {
+    if (typeof FullyKiosk !== "undefined" && FullyKiosk.getDeviceId) {
         return FullyKiosk.getDeviceId();
     }
     return "BROWSER_TEST_123"; 
 }
 
-// 3. CARGAR DISPOSITIVO (AL INICIAR)
+// 1. Inicializar: Validar Hardware
 async function inicializar() {
-    const deviceId = getDeviceId();
+    DEVICE_ID_REAL = getDeviceId();
     const loader = document.getElementById("loader");
     loader.style.display = "block";
 
     try {
-        // Añadimos nocache para evitar que la Xiaomi use datos viejos
-        const res = await fetch(`${BASE_URL}/dispositivos?nocache=${Date.now()}`);
-        
-        if (!res.ok) throw new Error("Error " + res.status + ": No se pudo conectar con Sheety");
+        const res = await fetch(`${URL_DISPOSITIVOS}?nocache=${Date.now()}`);
+        if (!res.ok) throw new Error("Error de red");
 
         const data = await res.json();
-        const lista = data.dispositivos;
-
-        // Buscamos si el ID de la tablet existe en el Excel
-        const pdaFound = lista.find(d => String(d.device).trim() === String(deviceId).trim());
+        // Buscamos la tablet en la lista enviada por Sheety
+        const pdaFound = data.dispositivos.find(d => String(d.device).trim() === String(DEVICE_ID_REAL).trim());
 
         if (pdaFound) {
-            document.getElementById("pdaLabel").innerText = "PDA Nº " + pdaFound.numeroPda;
+            NUMERO_PDA = pdaFound.numeroPda;
+            document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
             document.getElementById("loginButton").disabled = false;
-            window.PDA_DATA = pdaFound; // Guardamos globalmente
         } else {
             document.getElementById("pdaLabel").innerText = "ACCESO DENEGADO";
-            document.getElementById("errorMsg").innerText = "ID NO REGISTRADO: " + deviceId;
+            document.getElementById("errorMsg").innerText = "ID NO REGISTRADO: " + DEVICE_ID_REAL;
         }
     } catch (err) {
-        document.getElementById("pdaLabel").innerText = "ERROR DE CONEXIÓN";
-        document.getElementById("errorMsg").innerText = err.message;
-        console.error(err);
+        document.getElementById("pdaLabel").innerText = "REINTENTANDO CONEXIÓN...";
+        setTimeout(inicializar, 4000); 
     } finally {
         loader.style.display = "none";
     }
 }
 
-// 4. LÓGICA DE LOGIN
+// 2. Proceso de Login
 async function login() {
-    const userInp = document.getElementById("usuario").value.trim();
-    const pinInp = document.getElementById("pin").value.trim();
+    const userVal = document.getElementById("usuario").value.trim();
+    const pinVal = document.getElementById("pin").value.trim();
     const errorMsg = document.getElementById("errorMsg");
 
-    if (!userInp || !pinInp) {
-        errorMsg.innerText = "Ingresa datos completos";
+    if (!userVal || !pinVal) {
+        errorMsg.innerText = "Completa usuario y PIN";
         return;
     }
 
     try {
-        const res = await fetch(`${BASE_URL}/usuarios`);
+        const res = await fetch(URL_USUARIOS);
         const data = await res.json();
-        const userValid = data.usuarios.find(u => u.usuario === userInp && String(u.pin) === pinInp);
+        const userValid = data.usuarios.find(u => u.usuario === userVal && String(u.pin) === pinVal);
 
         if (userValid) {
-            // Registro de login en Sheety
-            await registrarAccion("login", userValid.usuario);
+            USUARIO_ACTUAL = userValid.usuario;
             
-            document.getElementById("userTag").innerText = "Operario: " + userValid.usuario;
+            // Registro en la hoja "login" de Sheety
+            await fetch(URL_LOGIN, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    login: { 
+                        usuario: USUARIO_ACTUAL, 
+                        numeroPda: NUMERO_PDA, 
+                        device: DEVICE_ID_REAL, 
+                        fecha: new Date().toLocaleString() 
+                    } 
+                })
+            });
+
+            document.getElementById("userTag").innerText = "Operario: " + USUARIO_ACTUAL;
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("menuDiv").style.display = "block";
             errorMsg.innerText = "";
@@ -120,44 +135,41 @@ async function login() {
             errorMsg.innerText = "Usuario o PIN incorrecto";
         }
     } catch (e) {
-        errorMsg.innerText = "Error verificando usuario";
+        errorMsg.innerText = "Error de servidor al validar usuario";
     }
 }
 
-// 5. REGISTRAR LOGS (ENTRADA/SALIDA)
-async function registrarAccion(tipo, usuario) {
-    const endpoint = tipo === "login" ? `${BASE_URL}/login` : `${BASE_URL}/logout`;
-    const payload = {};
-    payload[tipo] = {
-        usuario: usuario,
-        numeroPda: window.PDA_DATA.numeroPda,
-        device: getDeviceId(),
-        fecha: new Date().toLocaleString()
-    };
-
-    await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+// 3. Cerrar Turno
+async function cerrarTurno() {
+    if(!confirm("¿Deseas finalizar el turno?")) return;
+    
+    try {
+        await fetch(URL_LOGOUT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                logout: { 
+                    usuario: USUARIO_ACTUAL, 
+                    numeroPda: NUMERO_PDA, 
+                    device: DEVICE_ID_REAL, 
+                    fecha: new Date().toLocaleString() 
+                } 
+            })
+        });
+    } finally {
+        location.reload(); 
+    }
 }
 
-// 6. UTILIDADES
+// 4. Lanzador de aplicaciones para Fully Kiosk
 function abrirApp(pkg) {
     if (typeof FullyKiosk !== "undefined") {
         FullyKiosk.launchApp(pkg);
     } else {
-        alert("Simulando abrir: " + pkg);
+        alert("Modo PC: No se puede abrir " + pkg);
     }
 }
 
-async function cerrarTurno() {
-    const userActual = document.getElementById("userTag").innerText.replace("Operario: ", "");
-    await registrarAccion("logout", userActual);
-    location.reload(); // Reinicia para el siguiente operario
-}
-
-// Iniciar proceso
 window.onload = inicializar;
 </script>
 
