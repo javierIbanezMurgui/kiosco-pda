@@ -46,20 +46,20 @@
         <div id="loader" class="loader"></div>
 
         <div id="loginDiv">
-            <input type="text" id="usuario" placeholder="Usuario Operario">
+            <input type="text" id="usuario" placeholder="Usuario">
             <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
-            <button id="loginButton" onclick="login()" disabled>INGRESAR AL TURNO</button>
+            <button id="loginButton" onclick="login()" disabled>Iniciar sesion</button>
             <p id="errorMsg" class="error"></p>
         </div>
 
         <div id="menuDiv">
             <h3 id="userTag" style="color: var(--success);">Sesión Activa</h3>
-            <button onclick="window.location.href='https://www.marca.com/'">ABRIR MARCA (WEB)</button>
+            <button onclick="window.location.href='https://www.marca.com/'">CD Muelles</button>
             <button onclick="abrirApp('com.whatsapp')">ABRIR GALERIA</button>
             <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES</button>
             <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES_RECEPCION</button>
             <button onclick="abrirApp('com.tuempresa.sga')">ABRIR CAMARA</button>
-            <button class="btn-logout" onclick="cerrarTurno()" style="background-color: var(--danger);">CERRAR TURNO</button>
+            <button class="btn-logout" onclick="cerrarTurno()" style="background-color: var(--danger);">CERRAR SESION</button>
         </div>
     </div>
 </div>
@@ -145,7 +145,7 @@ function abrirApp(pkg) {
     } else if (typeof FullyKiosk !== "undefined" && FullyKiosk.launchApp) {
         FullyKiosk.launchApp(pkg);
     } else {
-        alert("Simulación en PC: Abriendo " + pkg);
+        alert("Abriendo camara " + pkg);
     }
 }
 async function cerrarTurno() {
