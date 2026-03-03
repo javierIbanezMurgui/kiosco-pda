@@ -48,7 +48,7 @@
         <div id="loginDiv">
             <input type="text" id="usuario" placeholder="Usuario">
             <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
-            <button id="loginButton" onclick="login()" disabled>Iniciar sesion</button>
+            <button id="loginButton" onclick="login()" disabled>Iniciar sesión</button>
             <p id="errorMsg" class="error"></p>
         </div>
 
@@ -65,15 +65,17 @@
 </div>
 
 <script>
+// --- CONFIGURACIÓN DE APIS ---
 const URL_USUARIOS = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/usuarios";
 const URL_DISPOSITIVOS = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/dispositivos";
 const URL_LOGIN = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/login";
 const URL_LOGOUT = "https://api.sheety.co/9389b56cb6358dbc85be664d0e548b76/kioscoPdas/logout";
 
-let NUMERO_PDA = null;
+let NUMERO_PDA = null; // Guardará el número de PDA asignado a este DeviceID
 let DEVICE_ID_REAL = "NO_DETECTADO";
 let USUARIO_ACTUAL = null;
 
+// Obtener el ID del dispositivo desde Fully Kiosk
 function getDeviceId() {
     if (typeof fully !== "undefined" && fully.getDeviceId) return fully.getDeviceId();
     if (typeof FullyKiosk !== "undefined" && FullyKiosk.getDeviceId) return FullyKiosk.getDeviceId();
@@ -86,6 +88,7 @@ function mostrarError(msg) {
     else { errorElem.style.display = "none"; }
 }
 
+// Paso 1: Identificar en qué PDA estamos físicamente
 async function inicializar() {
     DEVICE_ID_REAL = getDeviceId();
     document.getElementById("pdaLabel").innerText = "Conectando...";
@@ -99,44 +102,79 @@ async function inicializar() {
         const pdaFound = data.dispositivos.find(d => String(d.device).trim() === String(DEVICE_ID_REAL).trim());
 
         if (pdaFound) {
-            NUMERO_PDA = pdaFound.numeroPda;
+            NUMERO_PDA = pdaFound.numeroPda; // Ej: 1, 2, 3...
             document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
             document.getElementById("loginButton").disabled = false;
         } else {
             document.getElementById("pdaLabel").innerText = "SIN REGISTRO";
-            mostrarError("ID no autorizado: " + DEVICE_ID_REAL);
+            mostrarError("Este dispositivo no está registrado: " + DEVICE_ID_REAL);
         }
     } catch (err) {
         document.getElementById("pdaLabel").innerText = "ERROR DE RED";
-        mostrarError("¿Hay Wi-Fi? " + err.message);
+        mostrarError("Verifica la conexión Wi-Fi: " + err.message);
     } finally {
         document.getElementById("loader").style.display = "none";
     }
 }
 
+// Paso 2: Autenticar Usuario + PIN + PDA Asignada
 async function login() {
+    mostrarError(""); // Limpiar errores previos
     const u = document.getElementById("usuario").value.trim();
     const p = document.getElementById("pin").value.trim();
-    if (!u || !p) return mostrarError("Faltan datos");
+
+    if (!u || !p) return mostrarError("Introduce usuario y PIN");
+    if (!NUMERO_PDA) return mostrarError("Error: PDA no identificada");
+
+    document.getElementById("loader").style.display = "block";
 
     try {
         const res = await fetch(URL_USUARIOS);
         const data = await res.json();
+        
+        // Buscamos el usuario por nombre y pin
         const user = data.usuarios.find(x => x.usuario === u && String(x.pin) === p);
 
         if (user) {
+            // --- NUEVA VALIDACIÓN DE PDA ASIGNADA ---
+            const pdaAsignadaAlUsuario = String(user.pdaAsignada).trim();
+            const pdaActualFisica = String(NUMERO_PDA).trim();
+
+            // Verificamos si la PDA donde intenta entrar es la que tiene asignada
+            // Nota: Puedes añadir || pdaAsignadaAlUsuario === "*" si quieres permitir acceso total a alguien
+            if (pdaAsignadaAlUsuario !== pdaActualFisica) {
+                mostrarError(`ACCESO DENEGADO: Tienes asignada la PDA Nº ${pdaAsignadaAlUsuario}`);
+                document.getElementById("loader").style.display = "none";
+                return;
+            }
+
+            // Si todo es correcto, entramos al menú
             USUARIO_ACTUAL = user.usuario;
             document.getElementById("userTag").innerText = "Operario: " + USUARIO_ACTUAL;
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("menuDiv").style.display = "block";
             
+            // Registrar el evento de Login en Sheety
             fetch(URL_LOGIN, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ login: { usuario: USUARIO_ACTUAL, numeroPda: NUMERO_PDA, device: DEVICE_ID_REAL, fecha: new Date().toLocaleString() } })
+                body: JSON.stringify({ 
+                    login: { 
+                        usuario: USUARIO_ACTUAL, 
+                        numeroPda: NUMERO_PDA, 
+                        device: DEVICE_ID_REAL, 
+                        fecha: new Date().toLocaleString() 
+                    } 
+                })
             });
-        } else { mostrarError("Usuario o PIN incorrecto"); }
-    } catch (e) { mostrarError("Error en login"); }
+        } else { 
+            mostrarError("Usuario o PIN incorrecto"); 
+        }
+    } catch (e) { 
+        mostrarError("Error al validar datos. Reintente."); 
+    } finally {
+        document.getElementById("loader").style.display = "none";
+    }
 }
 
 function abrirApp(pkg) {
@@ -145,9 +183,10 @@ function abrirApp(pkg) {
     } else if (typeof FullyKiosk !== "undefined" && FullyKiosk.launchApp) {
         FullyKiosk.launchApp(pkg);
     } else {
-        alert("Abriendo camara " + pkg);
+        alert("Simulando apertura de: " + pkg);
     }
 }
+
 async function cerrarTurno() {
     if(!confirm("¿Deseas finalizar el turno y cerrar sesión?")) return;
     
@@ -157,7 +196,6 @@ async function cerrarTurno() {
     document.getElementById("loader").style.display = "block";
 
     try {
-        // Enviamos los datos a la hoja de LOGOUT antes de recargar
         await fetch(URL_LOGOUT, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -170,17 +208,13 @@ async function cerrarTurno() {
                 } 
             })
         });
-        console.log("Cierre de sesión registrado en Sheety");
     } catch(e) { 
         console.error("Error al registrar logout:", e); 
-        alert("Error de red al cerrar turno, pero se reiniciará la sesión.");
     } finally {
-        // Solo recargamos cuando el envío ha terminado (o ha fallado)
         location.reload(); 
     }
 }
 
-// Esperamos 1 segundo para que la tablet cargue sus funciones internas
 window.onload = () => { setTimeout(inicializar, 1000); };
 </script>
 </body>
