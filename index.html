@@ -143,7 +143,7 @@ async function login() {
             // Verificamos si la PDA donde intenta entrar es la que tiene asignada
             // Nota: Puedes añadir || pdaAsignadaAlUsuario === "*" si quieres permitir acceso total a alguien
             if (pdaAsignadaAlUsuario !== pdaActualFisica) {
-                mostrarError(`ACCESO DENEGADO: Tienes asignada la PDA Nº ${pdaAsignadaAlUsuario}`);
+                mostrarError(`No es tu PDA: Tu PDA asignada es la Nº ${pdaAsignadaAlUsuario}`);
                 document.getElementById("loader").style.display = "none";
                 return;
             }
