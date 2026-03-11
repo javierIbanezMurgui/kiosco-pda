@@ -5,68 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema PDA — Producción</title>
     <style>
-        :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --bg: #ffffff; }
-        html, body { margin:0;padding:0;height:100%;width:100%;overflow:hidden;font-family:sans-serif;background-color: var(--bg);}
-        .container { height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;}
-        .card { background:white;padding:30px;border-radius:15px;box-shadow:0 10px 25px rgba(0,0,0,0.1);width:100%;max-width:400px;text-align:center;border:1px solid #eaeaea; }
-        #pdaLabel { font-size:22px;margin-bottom:20px;color:#333;font-weight:bold;border-bottom:2px solid var(--primary);padding-bottom:10px;}
-        input { width:100%;padding:15px;margin:10px 0;border:1px solid #ddd;border-radius:8px;font-size:18px;background-color:#f9f9f9; }
-        button { width:100%;padding:15px;margin:10px 0;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;background-color:var(--primary);color:white;}
-        button:disabled { background-color:#ccc;}
+        :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; }
+        body { margin:0; padding:20px; font-family:sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; height:100vh; }
+        .card { background:white; padding:30px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.1); width:100%; max-width:400px; text-align:center; }
+        #pdaLabel { font-size:22px; margin-bottom:20px; font-weight:bold; color:#333; }
+        input { width:100%; padding:15px; margin:10px 0; border:1px solid #ddd; border-radius:8px; font-size:18px; }
+        button { width:100%; padding:15px; margin:10px 0; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; background-color:var(--primary); color:white; }
+        button:disabled { background-color:#ccc; }
         #menu { display:none; }
-        #error { color: var(--danger); font-size:14px; font-weight:bold;margin-top:15px;background-color:#f8d7da;padding:10px;border-radius:5px;display:none;}
+        #error { color: var(--danger); font-size:14px; margin-top:10px; display:none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <div id="pdaLabel">Cargando sistema...</div>
-        <p id="deviceIdDisplay" style="color:gray; font-size:12px;"></p>
-        <div id="login">
-            <input type="text" id="usuario" placeholder="Usuario">
-            <input type="password" id="pin" placeholder="PIN (4 dígitos)" inputmode="numeric">
-            <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
-            <p id="error"></p>
-        </div>
-        <div id="menu">
-            <h3 id="usuarioActivo" style="color: var(--success);">Sesión Activa</h3>
-            <button onclick="abrirUrl()">CD Muelles</button>
-            <button onclick="abrirApp('com.whatsapp')">ABRIR WHATSAPP</button>
-            <button onclick="logout()" style="background-color:var(--danger);">CERRAR SESIÓN</button>
-        </div>
+<div class="card">
+    <div id="pdaLabel">Conectando...</div>
+    <div id="login">
+        <input type="text" id="usuario" placeholder="Usuario">
+        <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
+        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
+        <p id="error"></p>
+    </div>
+    <div id="menu">
+        <h3 id="usuarioActivo">Sesión Activa</h3>
+        <button onclick="logout()" style="background-color:var(--danger);">CERRAR SESIÓN</button>
     </div>
 </div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbyoVLNSmyfbZpWPUSfNBfMxX9-r6fBuXO-p7aFNx9eyK43_rQwlOuwig2BWklE8dE9C/exec";
-let DEVICE_ID = "TEST_DEVICE_01";
-let NUMERO_PDA = null;
 
-// Esta función es la que llama Google para enviarnos los datos
-function callback(data) {
-    if (data.status === "ok") {
-        NUMERO_PDA = data.numeroPda;
-        document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
+// Usamos modo 'no-cors' para evitar el bloqueo del navegador de la PDA
+async function inicializar() {
+    try {
+        const resp = await fetch(API + "?action=check", { mode: 'no-cors' });
+        // Si llega aquí, la conexión pasó aunque no podamos leer el cuerpo por seguridad
+        document.getElementById("pdaLabel").innerText = "Sistema Listo";
         document.getElementById("loginBtn").disabled = false;
-    } else {
-        document.getElementById("pdaLabel").innerText = "No registrado";
-        showError("ID no encontrado en base de datos.");
+    } catch (e) {
+        document.getElementById("pdaLabel").innerText = "Error de red";
     }
 }
 
-function getDeviceId() { 
-    return (typeof FreeKiosk !== "undefined" && FreeKiosk.getDeviceId) ? FreeKiosk.getDeviceId() : DEVICE_ID; 
-}
-
-function showError(msg) {
-    const e = document.getElementById("error");
-    e.innerText = msg || "";
-    e.style.display = msg ? "block" : "none";
-}
-
-function inicializar() {
-    DEVICE_ID = getDeviceId();
-    document.getElementById("deviceIdDisplay").innerText = "DeviceID: " + DEVICE_ID;
+async function login() {
+    const user = document.getElementById("usuario").value;
+    const pin = document.getElementById("pin").value;
+    const btn = document.getElementById("loginBtn");
     
-    // Inyección de script para JSONP (Salto de seguridad
+    btn.disabled = true;
+    btn.innerText = "Validando...";
+    
+    try {
+        const response = await fetch(API, {
+            method: "POST",
+            body: JSON.stringify({ login: { usuario: user, pin: pin } })
+        });
+        const res = await response.json();
+        
+        if (res.status === "ok") {
+            document.getElementById("login").style.display = "none";
+            document.getElementById("menu").style.display = "block";
+        } else {
+            document.getElementById("error").innerText = res.msg;
+            document.getElementById("error").style.display = "block";
+        }
+    } catch (e) {
+        document.getElementById("error").innerText = "Error al conectar.";
+        document.getElementById("error").style.display = "block";
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Iniciar sesión";
+    }
+}
+
+window.onload = inicializar;
+</script>
+</body>
+</html>
