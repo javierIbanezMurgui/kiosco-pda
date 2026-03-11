@@ -46,6 +46,15 @@
     let NUMERO_PDA = null;
     let USUARIO_ACTUAL = null;
 
+    <script>
+const DEVICE = (typeof FreeKiosk !== "undefined" && FreeKiosk.getDeviceId) 
+               ? FreeKiosk.getDeviceId() 
+               : "TEST_DEVICE";
+
+console.log("DeviceID detectado:", DEVICE);
+alert("DeviceID detectado: " + DEVICE);
+</script>
+
     function getDeviceId() {
         if (typeof FreeKiosk !== "undefined" && FreeKiosk.getDeviceId) return FreeKiosk.getDeviceId();
         return "TEST_DEVICE_01"; // Para pruebas en PC
