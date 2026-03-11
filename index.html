@@ -65,8 +65,8 @@ button:disabled { background-color: #ccc; }
 </div>
 
 <script>
-// --- CONFIGURACIÓN DE APIS ---
-const BASE_URL = "https://script.google.com/macros/s/AKfycbzXXBnT-tO2WwgrnfsP50WNh4nGn-jDCHsfftE1-bH7Uk5j9kO_DfqcpcP6MeGZS8s/exec";
+// --- CONFIGURACIÓN DE APIS (REEMPLAZA POR TU WEB APP DE APPS SCRIPT) ---
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzOZZgjL3IsfDrmKpdzZxLi2b3EJqa2MlGL38K-WlfQVfkM1enaCnzxZVq4OZ_cFD30/exec";
 const URL_USUARIOS = `${BASE_URL}?action=usuarios`;
 const URL_DISPOSITIVOS = `${BASE_URL}?action=dispositivos`;
 const URL_LOGIN = `${BASE_URL}?action=login`;
@@ -88,7 +88,7 @@ function mostrarError(msg) {
     else { errorElem.style.display = "none"; }
 }
 
-// Paso 1: Identificar PDA
+// --- Inicializar PDA ---
 async function inicializar() {
     DEVICE_ID_REAL = getDeviceId();
     document.getElementById("pdaLabel").innerText = "Conectando...";
@@ -100,7 +100,6 @@ async function inicializar() {
         if (data.error) throw new Error(data.error);
 
         const pdaFound = data.dispositivos.find(d => String(d.device).trim() === String(DEVICE_ID_REAL).trim());
-
         if (pdaFound) {
             NUMERO_PDA = pdaFound.numeroPda;
             document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
@@ -117,7 +116,7 @@ async function inicializar() {
     }
 }
 
-// Paso 2: Login
+// --- Login ---
 async function login() {
     mostrarError("");
     const u = document.getElementById("usuario").value.trim();
@@ -134,12 +133,9 @@ async function login() {
         if (data.error) throw new Error(data.error);
 
         const user = data.usuarios.find(x => x.usuario === u && String(x.pin) === p);
-
         if (user) {
             const pdaAsignadaAlUsuario = String(user.pdaAsignada).trim();
-            const pdaActualFisica = String(NUMERO_PDA).trim();
-
-            if (pdaAsignadaAlUsuario !== pdaActualFisica) {
+            if (pdaAsignadaAlUsuario !== String(NUMERO_PDA).trim()) {
                 mostrarError(`No es tu PDA: Tu PDA asignada es la Nº ${pdaAsignadaAlUsuario}`);
                 document.getElementById("loader").style.display = "none";
                 return;
@@ -150,7 +146,6 @@ async function login() {
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("menuDiv").style.display = "block";
 
-            // Registrar login
             await fetch(URL_LOGIN, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -162,27 +157,22 @@ async function login() {
             mostrarError("Usuario o PIN incorrecto");
         }
     } catch(e) {
-        mostrarError("Error al validar datos. Reintente: " + e.message);
+        mostrarError("Error al validar datos: " + e.message);
     } finally {
         document.getElementById("loader").style.display = "none";
     }
 }
 
 function abrirApp(pkg) {
-    if (typeof fully !== "undefined" && fully.launchApp) {
-        fully.launchApp(pkg);
-    } else if (typeof FullyKiosk !== "undefined" && FullyKiosk.launchApp) {
-        FullyKiosk.launchApp(pkg);
-    } else {
-        alert("Simulando apertura de: " + pkg);
-    }
+    if (typeof fully !== "undefined" && fully.launchApp) fully.launchApp(pkg);
+    else if (typeof FullyKiosk !== "undefined" && FullyKiosk.launchApp) FullyKiosk.launchApp(pkg);
+    else alert("Simulando apertura de: " + pkg);
 }
 
 async function cerrarTurno() {
     if(!confirm("¿Deseas finalizar el turno y cerrar sesión?")) return;
 
-    const label = document.getElementById("pdaLabel");
-    label.innerText = "CERRANDO SESIÓN...";
+    document.getElementById("pdaLabel").innerText = "CERRANDO SESIÓN...";
     document.getElementById("menuDiv").style.display = "none";
     document.getElementById("loader").style.display = "block";
 
