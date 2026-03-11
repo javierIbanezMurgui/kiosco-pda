@@ -8,8 +8,6 @@
         :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --bg: #ffffff; }
         html, body { margin:0;padding:0;height:100%;width:100%;overflow:hidden;font-family:sans-serif;background-color: var(--bg);}
         .container { height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;}
-        .logo-container { margin-bottom:20px;text-align:center; }
-        .logo-img { max-width:200px;height:auto;margin:0 auto;display:block; }
         .card { background:white;padding:30px;border-radius:15px;box-shadow:0 10px 25px rgba(0,0,0,0.1);width:100%;max-width:400px;text-align:center;border:1px solid #eaeaea; }
         #pdaLabel { font-size:22px;margin-bottom:20px;color:#333;font-weight:bold;border-bottom:2px solid var(--primary);padding-bottom:10px;}
         input { width:100%;padding:15px;margin:10px 0;border:1px solid #ddd;border-radius:8px;font-size:18px;background-color:#f9f9f9; }
@@ -22,14 +20,9 @@
 <body>
 
 <div class="container">
-    <div class="logo-container">
-        <img src="aza-logistics.png" alt="AZA Logistics Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/200x60?text=LOGO'">
-    </div>
-
-    <p id="deviceIdDisplay" style="color:gray; font-size:12px; text-align:center; margin-bottom:10px;"></p>
-
     <div class="card">
         <div id="pdaLabel">Cargando sistema...</div>
+        <p id="deviceIdDisplay" style="color:gray; font-size:12px;"></p>
         <div id="login">
             <input type="text" id="usuario" placeholder="Usuario">
             <input type="password" id="pin" placeholder="PIN (4 dígitos)" inputmode="numeric">
@@ -40,8 +33,7 @@
             <h3 id="usuarioActivo" style="color: var(--success);">Sesión Activa</h3>
             <button onclick="abrirUrl()">CD Muelles</button>
             <button onclick="abrirApp('com.whatsapp')">ABRIR WHATSAPP</button>
-            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES</button>
-            <button style="background-color:var(--danger);" onclick="logout()">CERRAR SESIÓN</button>
+            <button onclick="logout()" style="background-color:var(--danger);">CERRAR SESIÓN</button>
         </div>
     </div>
 </div>
@@ -50,9 +42,8 @@
 const API = "https://script.google.com/macros/s/AKfycbyoVLNSmyfbZpWPUSfNBfMxX9-r6fBuXO-p7aFNx9eyK43_rQwlOuwig2BWklE8dE9C/exec";
 let DEVICE_ID = "TEST_DEVICE_01";
 let NUMERO_PDA = null;
-let USUARIO_ACTUAL = null;
 
-// Función de respuesta para la técnica JSONP
+// Esta función es la que llama Google para enviarnos los datos
 function callback(data) {
     if (data.status === "ok") {
         NUMERO_PDA = data.numeroPda;
@@ -60,7 +51,7 @@ function callback(data) {
         document.getElementById("loginBtn").disabled = false;
     } else {
         document.getElementById("pdaLabel").innerText = "No registrado";
-        showError("Terminal sin permiso.");
+        showError("ID no encontrado en base de datos.");
     }
 }
 
@@ -76,51 +67,6 @@ function showError(msg) {
 
 function inicializar() {
     DEVICE_ID = getDeviceId();
-    document.getElementById("deviceIdDisplay").innerText = "ID: " + DEVICE_ID;
+    document.getElementById("deviceIdDisplay").innerText = "DeviceID: " + DEVICE_ID;
     
-    // Usamos JSONP (crear script tag) para saltar el error de CORS al leer datos
-    const script = document.createElement('script');
-    script.src = `${API}?action=init&device=${encodeURIComponent(DEVICE_ID)}`;
-    document.body.appendChild(script);
-}
-
-async function login() {
-    showError("");
-    const user = document.getElementById("usuario").value;
-    const pin = document.getElementById("pin").value;
-    const btn = document.getElementById("loginBtn");
-    if (!user || !pin) return showError("Completa todos los campos");
-    
-    btn.disabled = true;
-    btn.innerText = "Verificando...";
-    
-    try {
-        const response = await fetch(API, {
-            method: "POST",
-            body: JSON.stringify({ login: { usuario: user, pin: pin, device: DEVICE_ID, pda: NUMERO_PDA } })
-        });
-        const res = await response.json();
-        if (res.status === "ok") {
-            USUARIO_ACTUAL = user;
-            document.getElementById("login").style.display = "none";
-            document.getElementById("menu").style.display = "block";
-            document.getElementById("usuarioActivo").innerText = "Operario: " + user;
-        } else {
-            showError(res.msg);
-        }
-    } catch (e) {
-        showError("Error de conexión al enviar datos.");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Iniciar sesión";
-    }
-}
-
-function abrirUrl() { window.location.href = "https://www.marca.com/"; }
-function abrirApp(pkg) { if (typeof FreeKiosk !== "undefined") FreeKiosk.launchApp(pkg); else alert("Solo disponible en PDA"); }
-function logout() { location.reload(); }
-
-window.onload = () => { setTimeout(inicializar, 500); };
-</script>
-</body>
-</html>
+    // Inyección de script para JSONP (Salto de seguridad
