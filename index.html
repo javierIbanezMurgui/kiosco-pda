@@ -8,11 +8,10 @@
 :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --bg: #ffffff; }
 html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: sans-serif; background-color: var(--bg) !important; }
 .container { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-.logo-container { margin-bottom: 20px; text-align: center; }
-.logo-img { max-width: 150px; display: block; margin: auto; }
+.logo-img { max-width: 150px; margin-bottom: 20px; }
 .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-#pdaLabel { font-size: 22px; margin-bottom: 20px; color: #333; font-weight: bold; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; background-color: #f9f9f9; }
+#pdaLabel { font-size: 20px; margin-bottom: 15px; color: #333; font-weight: bold; }
+input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; box-sizing: border-box; }
 button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: var(--primary); color: white; }
 button:disabled { background-color: #ccc; }
 #menuDiv { display: none; }
@@ -24,10 +23,7 @@ button:disabled { background-color: #ccc; }
 <body>
 
 <div class="container">
-    <div class="logo-container">
-        <img src="aza-logistics.png" alt="Logo" class="logo-img">
-    </div>
-
+    <img src="aza-logistics.png" alt="Logo" class="logo-img">
     <div class="card">
         <div id="pdaLabel">Iniciando sistema...</div>
         <div id="loader" class="loader"></div>
@@ -44,15 +40,13 @@ button:disabled { background-color: #ccc; }
             <button onclick="window.location.href='https://www.marca.com/'">CD Muelles</button>
             <button onclick="abrirApp('com.whatsapp')">ABRIR GALERIA</button>
             <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES</button>
-            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES_RECEPCION</button>
-            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR CAMARA</button>
-            <button class="btn-logout" onclick="cerrarTurno()" style="background-color: var(--danger);">CERRAR SESION</button>
+            <button onclick="cerrarTurno()" style="background-color: var(--danger);">CERRAR SESIÓN</button>
         </div>
     </div>
 </div>
 
 <script>
-// --- CONFIGURACIÓN DE APIS ---
+// --- CONFIGURACIÓN: REEMPLAZA CON TU NUEVA URL DE DESPLIEGUE ---
 const BASE_URL = "https://script.google.com/macros/s/AKfycbzWtlcxZe6ajy54wn9n9xSUfjMg2HosVzxTP0sJ_MN7kyfDTAGUHKlkSVRWLC8BUAy9/exec";
 const URL_USUARIOS = BASE_URL + "?fn=getUsuarios";
 const URL_DISPOSITIVOS = BASE_URL + "?fn=getDispositivos";
@@ -60,143 +54,75 @@ const URL_LOGIN = BASE_URL + "?sheet=login";
 const URL_LOGOUT = BASE_URL + "?sheet=logout";
 
 let NUMERO_PDA = null;
-let DEVICE_ID_REAL = "NO_DETECTADO";
+let DEVICE_ID_REAL = "PDA_TEST"; 
 let USUARIO_ACTUAL = null;
 
 function mostrarError(msg) {
     const errorElem = document.getElementById("errorMsg");
-    if (msg) { errorElem.innerText = msg; errorElem.style.display = "block"; }
-    else { errorElem.style.display = "none"; }
-}
-
-function getDeviceId() {
-    if (typeof freekiosk !== "undefined" && freekiosk.getDeviceId) return freekiosk.getDeviceId();
-    return "PDA_TEST";
+    errorElem.innerText = msg;
+    errorElem.style.display = msg ? "block" : "none";
 }
 
 async function inicializar() {
-    DEVICE_ID_REAL = getDeviceId();
-    document.getElementById("pdaLabel").innerText = "Conectando...";
-    document.getElementById("loader").style.display = "block";
-
     try {
         const res = await fetch(`${URL_DISPOSITIVOS}&cb=${Date.now()}`);
-        if (!res.ok) throw new Error("Error de servidor");
-
         const data = await res.json();
+        // Ajuste: comparamos el ID de dispositivo con los registrados en la hoja 'dispositivos'
         const pdaFound = data.dispositivos.find(d => String(d.device).trim() === String(DEVICE_ID_REAL).trim());
-
+        
         if (pdaFound) {
             NUMERO_PDA = pdaFound.numeroPda;
             document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
             document.getElementById("loginButton").disabled = false;
         } else {
-            document.getElementById("pdaLabel").innerText = "SIN REGISTRO";
-            mostrarError("Este dispositivo no está registrado: " + DEVICE_ID_REAL);
+            mostrarError("Dispositivo no registrado: " + DEVICE_ID_REAL);
         }
     } catch (err) {
-        document.getElementById("pdaLabel").innerText = "ERROR DE RED";
-        mostrarError("Verifica la conexión Wi-Fi: " + err.message);
+        mostrarError("Error de conexión: " + err.message);
     } finally {
         document.getElementById("loader").style.display = "none";
     }
 }
 
 async function login() {
-    mostrarError("");
-    const u = document.getElementById("usuario").value.trim();
+    const u = document.getElementById("usuario").value.trim().toLowerCase();
     const p = document.getElementById("pin").value.trim();
-    if (!u || !p) return mostrarError("Introduce usuario y PIN");
-    if (!NUMERO_PDA) return mostrarError("Error: PDA no identificada");
+    
     document.getElementById("loader").style.display = "block";
-
     try {
         const res = await fetch(URL_USUARIOS);
         const data = await res.json();
-        const user = data.usuarios.find(x => x.usuario === u && String(x.pin) === p);
+        
+        const user = data.usuarios.find(x => String(x.usuario).trim().toLowerCase() === u && String(x.pin).trim() === p);
 
         if (user) {
             if (String(user.pdaAsignada).trim() !== String(NUMERO_PDA).trim()) {
-                mostrarError(`No es tu PDA: Tu PDA asignada es la Nº ${user.pdaAsignada}`);
-                document.getElementById("loader").style.display = "none";
-                return;
+                mostrarError("PDA incorrecta. Asignada: " + user.pdaAsignada);
+            } else {
+                USUARIO_ACTUAL = user.usuario;
+                document.getElementById("loginDiv").style.display = "none";
+                document.getElementById("menuDiv").style.display = "block";
             }
-
-            USUARIO_ACTUAL = user.usuario;
-            document.getElementById("userTag").innerText = "Operario: " + USUARIO_ACTUAL;
-            document.getElementById("loginDiv").style.display = "none";
-            document.getElementById("menuDiv").style.display = "block";
-
-            // Captura GPS
-            let lat = "", lng = "";
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    lat = pos.coords.latitude;
-                    lng = pos.coords.longitude;
-                    registrarLogin(lat, lng);
-                }, () => registrarLogin(lat, lng));
-            } else registrarLogin(lat, lng);
         } else {
             mostrarError("Usuario o PIN incorrecto");
         }
     } catch (e) {
-        mostrarError("Error al validar datos. Reintente.");
+        mostrarError("Error técnico al validar: " + e.message);
     } finally {
         document.getElementById("loader").style.display = "none";
     }
 }
 
-function registrarLogin(lat, lng) {
-    fetch(URL_LOGIN, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            fecha: new Date().toLocaleString(),
-            usuario: USUARIO_ACTUAL,
-            numeroPda: NUMERO_PDA,
-            device: DEVICE_ID_REAL,
-            lat, lng
-        })
-    });
-}
-
-async function cerrarTurno() {
-    if(!confirm("¿Deseas finalizar el turno y cerrar sesión?")) return;
-    document.getElementById("pdaLabel").innerText = "CERRANDO SESIÓN...";
-    document.getElementById("menuDiv").style.display = "none";
-    document.getElementById("loader").style.display = "block";
-
-    let lat = "", lng = "";
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            lat = pos.coords.latitude;
-            lng = pos.coords.longitude;
-            registrarLogout(lat, lng);
-        }, () => location.reload());
-    } else location.reload();
-}
-
-function registrarLogout(lat, lng) {
-    fetch(URL_LOGOUT, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            fecha: new Date().toLocaleString(),
-            usuario: USUARIO_ACTUAL,
-            numeroPda: NUMERO_PDA,
-            device: DEVICE_ID_REAL,
-            lat, lng
-        })
-    }).finally(() => location.reload());
+function cerrarTurno() {
+    location.reload();
 }
 
 function abrirApp(pkg) {
-    if (typeof freekiosk !== "undefined" && freekiosk.launchApp) freekiosk.launchApp(pkg);
-    else alert("Simulando apertura de: " + pkg);
+    if (typeof freekiosk !== "undefined") freekiosk.launchApp(pkg);
+    else alert("Abrir: " + pkg);
 }
 
-window.onload = () => { setTimeout(inicializar, 1000); };
+window.onload = inicializar;
 </script>
-
 </body>
 </html>
