@@ -1,84 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema PDA — Producción</title>
-    <style>
-        :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; }
-        body { margin:0; padding:20px; font-family:sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; height:100vh; }
-        .card { background:white; padding:30px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.1); width:100%; max-width:400px; text-align:center; }
-        #pdaLabel { font-size:22px; margin-bottom:20px; font-weight:bold; color:#333; }
-        input { width:100%; padding:15px; margin:10px 0; border:1px solid #ddd; border-radius:8px; font-size:18px; }
-        button { width:100%; padding:15px; margin:10px 0; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; background-color:var(--primary); color:white; }
-        button:disabled { background-color:#ccc; }
-        #menu { display:none; }
-        #error { color: var(--danger); font-size:14px; margin-top:10px; display:none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDA Sistema</title>
+<style>
+body{font-family:Arial;background:#f5f5f5;margin:0;height:100vh;display:flex;justify-content:center;align-items:center}
+.card{background:white;padding:30px;border-radius:10px;width:350px;box-shadow:0 5px 20px rgba(0,0,0,0.2);text-align:center}
+input{width:100%;padding:12px;margin:10px 0;font-size:18px}
+button{width:100%;padding:12px;font-size:18px;margin-top:10px}
+#menu{display:none}
+.error{color:red}
+</style>
 </head>
 <body>
-
 <div class="card">
-    <div id="pdaLabel">Conectando...</div>
-    <div id="login">
-        <input type="text" id="usuario" placeholder="Usuario">
-        <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
-        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
-        <p id="error"></p>
-    </div>
-    <div id="menu">
-        <h3 id="usuarioActivo">Sesión Activa</h3>
-        <button onclick="logout()" style="background-color:var(--danger);">CERRAR SESIÓN</button>
-    </div>
+<h2 id="pdaLabel">Detectando PDA...</h2>
+<div id="login">
+<input id="usuario" placeholder="Usuario">
+<input id="pin" type="password" placeholder="PIN">
+<button onclick="login()">Entrar</button>
+<p id="error" class="error"></p>
+</div>
+<div id="menu">
+<h3 id="operario"></h3>
+<button onclick="abrirCamara()">Abrir Cámara</button>
+<button onclick="abrirGaleria()">Abrir Galería</button>
+<button onclick="abrirURL('https://www.marca.com')">Abrir URL</button>
+<button onclick="logout()">Cerrar sesión</button>
+</div>
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbw2oTxChuw6Re5VM3admfiUSkqFGHurey5sUt8lqA2nu6TRUOmtjf7o0igKwZQguz_V/exec";
+const API="https://script.google.com/macros/s/AKfycbyWKgablpCAi6zJ70hXEkLMU4xOno-4C1oaPzndWW9WTWqELp7agvZlcmTdD9aNbLX4/exec";
+let DEVICE_ID="PDA_TEST";
+let NUMERO_PDA=null;
+let USUARIO_ACTUAL=null;
 
-// Usamos modo 'no-cors' para evitar el bloqueo del navegador de la PDA
-async function inicializar() {
-    try {
-        const resp = await fetch(API + "?action=check", { mode: 'no-cors' });
-        // Si llega aquí, la conexión pasó aunque no podamos leer el cuerpo por seguridad
-        document.getElementById("pdaLabel").innerText = "Sistema Listo";
-        document.getElementById("loginBtn").disabled = false;
-    } catch (e) {
-        document.getElementById("pdaLabel").innerText = "Error de red";
-    }
+// --- Obtener DeviceID de Free Kiosk ---
+function obtenerDeviceId(){
+    if(window.Kiosk && window.Kiosk.deviceId) return window.Kiosk.deviceId;
+    if(window.deviceId) return window.deviceId;
+    return "PDA_TEST";
 }
 
-async function login() {
-    const user = document.getElementById("usuario").value;
-    const pin = document.getElementById("pin").value;
-    const btn = document.getElementById("loginBtn");
-    
-    btn.disabled = true;
-    btn.innerText = "Validando...";
-    
-    try {
-        const response = await fetch(API, {
-            method: "POST",
-            body: JSON.stringify({ login: { usuario: user, pin: pin } })
-        });
-        const res = await response.json();
-        
-        if (res.status === "ok") {
-            document.getElementById("login").style.display = "none";
-            document.getElementById("menu").style.display = "block";
-        } else {
-            document.getElementById("error").innerText = res.msg;
-            document.getElementById("error").style.display = "block";
-        }
-    } catch (e) {
-        document.getElementById("error").innerText = "Error al conectar.";
-        document.getElementById("error").style.display = "block";
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Iniciar sesión";
-    }
+// --- Obtener ubicación automáticamente ---
+function obtenerUbicacion(){
+    return new Promise(resolve=>{
+        if(!navigator.geolocation){resolve({lat:0,lng:0}); return;}
+        navigator.geolocation.getCurrentPosition(
+            pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}),
+            ()=>resolve({lat:0,lng:0})
+        );
+    });
 }
 
-window.onload = inicializar;
+// --- Inicializar PDA ---
+async function init(){
+    DEVICE_ID = obtenerDeviceId();
+    const res = await fetch(API+"?type=dispositivos");
+    const data = await res.json();
+    const d = data.dispositivos.find(x=>x.device===DEVICE_ID);
+    if(d){NUMERO_PDA=d.numeroPda; document.getElementById("pdaLabel").innerText="PDA Nº "+NUMERO_PDA;}
+    else{document.getElementById("pdaLabel").innerText="PDA NO REGISTRADA";}
+}
+init();
+
+// --- Login ---
+async function login(){
+    const u = document.getElementById("usuario").value;
+    const p = document.getElementById("pin").value;
+    const res = await fetch(API+"?type=usuarios");
+    const data = await res.json();
+    const user = data.usuarios.find(x=>x.usuario==u && x.pin==p);
+    if(!user){error("Usuario o PIN incorrecto"); return;}
+    if(user.activo!=1){error("Usuario bloqueado"); return;}
+    if(user.pdaAsignada!=NUMERO_PDA){error("No es tu PDA. Tu PDA es la Nº "+user.pdaAsignada); return;}
+    USUARIO_ACTUAL = user.usuario;
+    document.getElementById("login").style.display="none";
+    document.getElementById("menu").style.display="block";
+    document.getElementById("operario").innerText="Operario: "+USUARIO_ACTUAL;
+
+    const ubicacion = await obtenerUbicacion();
+    // Registrar login con ubicación
+    fetch(API,{
+        method:"POST",
+        body:JSON.stringify({
+            type:"login",
+            usuario:USUARIO_ACTUAL,
+            numeroPda:NUMERO_PDA,
+            device:DEVICE_ID,
+            lat:ubicacion.lat,
+            lng:ubicacion.lng
+        })
+    });
+}
+
+// --- Logout ---
+async function logout(){
+    const ubicacion = await obtenerUbicacion();
+    fetch(API,{
+        method:"POST",
+        body:JSON.stringify({
+            type:"logout",
+            usuario:USUARIO_ACTUAL,
+            numeroPda:NUMERO_PDA,
+            device:DEVICE_ID,
+            lat:ubicacion.lat,
+            lng:ubicacion.lng
+        })
+    });
+    location.reload();
+}
+
+// --- Control de sesión única (desconecta si inicia en otra PDA) ---
+async function verificarSesion(){
+    const res = await fetch(API+"?type=sesiones");
+    const data = await res.json();
+    const sesion = data.sesiones.find(x=>x.usuario==USUARIO_ACTUAL);
+    if(!sesion || sesion.device!=DEVICE_ID){alert("Sesión iniciada en otra PDA"); location.reload();}
+}
+setInterval(()=>{if(USUARIO_ACTUAL) verificarSesion();},20000);
+
+// --- Botones ---
+function abrirCamara(){alert("Aquí se abriría la cámara");}
+function abrirGaleria(){alert("Aquí se abriría la galería");}
+function abrirURL(url){window.location.href=url;}
+function error(msg){document.getElementById("error").innerText=msg;}
 </script>
 </body>
 </html>
