@@ -2,28 +2,39 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PDA - AZA Logistics</title>
     <style>
-        body { font-family:sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-        .card { background:white; padding:30px; border-radius:15px; width:350px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
-        input, button { width:100%; padding:15px; margin:10px 0; border-radius:8px; border:1px solid #ddd; }
-        button { background:#007bff; color:white; font-weight:bold; cursor:pointer; }
+        :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --bg: #ffffff; }
+        body { margin:0; padding:20px; font-family:sans-serif; background:#f5f5f5; height:100vh; display:flex; justify-content:center; align-items:center; }
+        .card { background:white; padding:30px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.1); width:100%; max-width:400px; text-align:center; }
+        #pdaLabel { font-size:22px; margin-bottom:20px; font-weight:bold; color:#333; border-bottom:2px solid var(--primary); padding-bottom:10px; }
+        input { width:100%; padding:15px; margin:10px 0; border:1px solid #ddd; border-radius:8px; font-size:18px; box-sizing:border-box; }
+        button { width:100%; padding:15px; margin:10px 0; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; background-color:var(--primary); color:white; }
+        button:disabled { background-color:#ccc; }
+        #menuDiv { display:none; }
+        .error { color: var(--danger); font-size:14px; margin-top:10px; display:none; background:#f8d7da; padding:10px; border-radius:5px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="pdaLabel">Iniciando...</div>
+    <div id="pdaLabel">Conectando...</div>
     <div id="loginDiv">
         <input type="text" id="usuario" placeholder="Usuario">
         <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
         <button id="loginButton" onclick="login()" disabled>Iniciar sesión</button>
+        <p id="errorMsg" class="error"></p>
+    </div>
+    <div id="menuDiv">
+        <h3 id="userTag">Sesión Activa</h3>
+        <button onclick="abrirApp('com.whatsapp')">ABRIR WHATSAPP</button>
+        <button onclick="cerrarTurno()" style="background-color:var(--danger);">CERRAR SESIÓN</button>
     </div>
 </div>
 
 <script>
-// Pega aquí la URL de tu Web App de Google
-const API_URL = "https://script.google.com/macros/s/AKfycbzSZb8RtHmeTBGWMPtpdBwBXioTk6il9E_7HNAO4iFthIDe3jhEbo9YiDtvydzP18Fa/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbzSZb8RtHmeTBGWMPtpdBwBXioTk6il9E_7HNAO4iFthIDe3jhEbo9YiDtvydzP18Fa/exec";
 let NUMERO_PDA = null;
 
 function getDeviceId() {
@@ -32,33 +43,47 @@ function getDeviceId() {
 
 async function inicializar() {
     const id = getDeviceId();
-    const res = await fetch(`${API_URL}?action=getDispositivos`);
-    const dispositivos = await res.json();
-    const pda = dispositivos.find(d => String(d.device).trim() === String(id).trim());
-    
-    if(pda) {
-        NUMERO_PDA = pda.numeroPda;
-        document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
-        document.getElementById("loginButton").disabled = false;
-    }
+    try {
+        const res = await fetch(`${API_URL}?action=getDispositivos`);
+        const data = await res.json();
+        const pda = data.find(d => String(d.device).trim() === String(id).trim());
+        
+        if(pda) {
+            NUMERO_PDA = pda.numeroPda;
+            document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
+            document.getElementById("loginButton").disabled = false;
+        } else {
+            document.getElementById("pdaLabel").innerText = "No registrado: " + id;
+        }
+    } catch(e) { document.getElementById("pdaLabel").innerText = "Error de Red"; }
 }
 
 async function login() {
     const u = document.getElementById("usuario").value.trim();
     const p = document.getElementById("pin").value.trim();
+    
     const res = await fetch(`${API_URL}?action=getUsuarios`);
     const usuarios = await res.json();
-    const user = usuarios.find(x => x.usuario === u && String(x.pin) === p);
+    const user = usuarios.find(x => String(x.usuario).trim() === u && String(x.pin).trim() === p);
 
     if(user && String(user.pdaAsignada).trim() === String(NUMERO_PDA).trim()) {
-        alert("Acceso correcto");
-        // Aquí llamarías al POST para registrar el login
-        await fetch(API_URL, { method: "POST", body: JSON.stringify({login: {usuario: u, numeroPda: NUMERO_PDA, device: getDeviceId()}}) });
+        document.getElementById("loginDiv").style.display = "none";
+        document.getElementById("menuDiv").style.display = "block";
+        document.getElementById("userTag").innerText = "Operario: " + u;
+        
+        // Registrar login
+        fetch(API_URL, { 
+            method: "POST", 
+            body: JSON.stringify({login: {usuario: u, numeroPda: NUMERO_PDA, device: getDeviceId()}}) 
+        });
     } else {
-        alert("Acceso denegado");
+        document.getElementById("errorMsg").innerText = "Acceso denegado o PDA incorrecta";
+        document.getElementById("errorMsg").style.display = "block";
     }
 }
 
+function abrirApp(pkg) { if(typeof FreeKiosk !== "undefined") FreeKiosk.launchApp(pkg); }
+function cerrarTurno() { location.reload(); }
 window.onload = inicializar;
 </script>
 </body>
