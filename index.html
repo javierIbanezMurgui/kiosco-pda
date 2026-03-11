@@ -1,38 +1,38 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema PDA — Producción</title>
-    <style>
-        :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --bg: #ffffff; }
-        html, body { 
-            margin: 0; padding: 0; height: 100%; width: 100%; 
-            overflow: hidden; font-family: sans-serif;
-            background-color: var(--bg) !important; 
-        }
-        .container { 
-            height: 100%; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; padding: 20px; 
-            box-sizing: border-box; position: relative; z-index: 10;
-            background-color: var(--bg) !important;
-        }
-        .logo-container { margin-bottom: 20px; text-align: center; }
-        .logo-img { max-width: 150px; height: auto; display: block; margin: 0 auto; }
-        .card { 
-            background: white; padding: 30px; border-radius: 15px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; 
-            max-width: 400px; text-align: center; border: 1px solid #eaeaea; 
-        }
-        #pdaLabel { font-size: 22px; margin-bottom: 20px; color: #333; font-weight: bold; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; box-sizing: border-box; background-color: #f9f9f9; }
-        button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: var(--primary); color: white; }
-        button:disabled { background-color: #ccc; }
-        #menuDiv { display: none; }
-        .error { color: var(--danger); font-size: 14px; font-weight: bold; margin-top: 15px; background-color: #f8d7da; padding: 10px; border-radius: 5px; display: none; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display: none; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sistema PDA — Producción</title>
+<style>
+:root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --bg: #ffffff; }
+html, body { 
+    margin: 0; padding: 0; height: 100%; width: 100%; 
+    overflow: hidden; font-family: sans-serif;
+    background-color: var(--bg) !important; 
+}
+.container { 
+    height: 100%; display: flex; flex-direction: column; 
+    justify-content: center; align-items: center; padding: 20px; 
+    box-sizing: border-box; position: relative; z-index: 10;
+    background-color: var(--bg) !important;
+}
+.logo-container { margin-bottom: 20px; text-align: center; }
+.logo-img { max-width: 150px; height: auto; display: block; margin: 0 auto; }
+.card { 
+    background: white; padding: 30px; border-radius: 15px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; 
+    max-width: 400px; text-align: center; border: 1px solid #eaeaea; 
+}
+#pdaLabel { font-size: 22px; margin-bottom: 20px; color: #333; font-weight: bold; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; box-sizing: border-box; background-color: #f9f9f9; }
+button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: var(--primary); color: white; }
+button:disabled { background-color: #ccc; }
+#menuDiv { display: none; }
+.error { color: var(--danger); font-size: 14px; font-weight: bold; margin-top: 15px; background-color: #f8d7da; padding: 10px; border-radius: 5px; display: none; }
+.loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display: none; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
 
@@ -65,17 +65,17 @@
 </div>
 
 <script>
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwMliwQhg5MHYbg86wc21aBcpV39dAK1b69P42wS5WC-QbDxpnnUukDn2SfSoGGv18c/exec"; // La URL que obtuviste del Web App
+// --- CONFIGURACIÓN DE APIS ---
+const BASE_URL = "https://script.google.com/macros/s/AKfycbwMliwQhg5MHYbg86wc21aBcpV39dAK1b69P42wS5WC-QbDxpnnUukDn2SfSoGGv18c/exec";
 const URL_USUARIOS = `${BASE_URL}?action=usuarios`;
 const URL_DISPOSITIVOS = `${BASE_URL}?action=dispositivos`;
 const URL_LOGIN = `${BASE_URL}?action=login`;
 const URL_LOGOUT = `${BASE_URL}?action=logout`;
 
-let NUMERO_PDA = null; // Guardará el número de PDA asignado a este DeviceID
+let NUMERO_PDA = null;
 let DEVICE_ID_REAL = "NO_DETECTADO";
 let USUARIO_ACTUAL = null;
 
-// Obtener el ID del dispositivo desde Fully Kiosk
 function getDeviceId() {
     if (typeof fully !== "undefined" && fully.getDeviceId) return fully.getDeviceId();
     if (typeof FullyKiosk !== "undefined" && FullyKiosk.getDeviceId) return FullyKiosk.getDeviceId();
@@ -88,21 +88,21 @@ function mostrarError(msg) {
     else { errorElem.style.display = "none"; }
 }
 
-// Paso 1: Identificar en qué PDA estamos físicamente
+// Paso 1: Identificar PDA
 async function inicializar() {
     DEVICE_ID_REAL = getDeviceId();
     document.getElementById("pdaLabel").innerText = "Conectando...";
     document.getElementById("loader").style.display = "block";
 
     try {
-        const res = await fetch(`${URL_DISPOSITIVOS}?cb=${Date.now()}`);
-        if (!res.ok) throw new Error("Error de Servidor (Sheety)");
-
+        const res = await fetch(`${URL_DISPOSITIVOS}&cb=${Date.now()}`);
         const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
         const pdaFound = data.dispositivos.find(d => String(d.device).trim() === String(DEVICE_ID_REAL).trim());
 
         if (pdaFound) {
-            NUMERO_PDA = pdaFound.numeroPda; // Ej: 1, 2, 3...
+            NUMERO_PDA = pdaFound.numeroPda;
             document.getElementById("pdaLabel").innerText = "PDA Nº " + NUMERO_PDA;
             document.getElementById("loginButton").disabled = false;
         } else {
@@ -117,9 +117,9 @@ async function inicializar() {
     }
 }
 
-// Paso 2: Autenticar Usuario + PIN + PDA Asignada
+// Paso 2: Login
 async function login() {
-    mostrarError(""); // Limpiar errores previos
+    mostrarError("");
     const u = document.getElementById("usuario").value.trim();
     const p = document.getElementById("pin").value.trim();
 
@@ -131,47 +131,38 @@ async function login() {
     try {
         const res = await fetch(URL_USUARIOS);
         const data = await res.json();
-        
-        // Buscamos el usuario por nombre y pin
+        if (data.error) throw new Error(data.error);
+
         const user = data.usuarios.find(x => x.usuario === u && String(x.pin) === p);
 
         if (user) {
-            // --- NUEVA VALIDACIÓN DE PDA ASIGNADA ---
             const pdaAsignadaAlUsuario = String(user.pdaAsignada).trim();
             const pdaActualFisica = String(NUMERO_PDA).trim();
 
-            // Verificamos si la PDA donde intenta entrar es la que tiene asignada
-            // Nota: Puedes añadir || pdaAsignadaAlUsuario === "*" si quieres permitir acceso total a alguien
             if (pdaAsignadaAlUsuario !== pdaActualFisica) {
                 mostrarError(`No es tu PDA: Tu PDA asignada es la Nº ${pdaAsignadaAlUsuario}`);
                 document.getElementById("loader").style.display = "none";
                 return;
             }
 
-            // Si todo es correcto, entramos al menú
             USUARIO_ACTUAL = user.usuario;
             document.getElementById("userTag").innerText = "Operario: " + USUARIO_ACTUAL;
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("menuDiv").style.display = "block";
-            
-            // Registrar el evento de Login en Sheety
-            fetch(URL_LOGIN, {
+
+            // Registrar login
+            await fetch(URL_LOGIN, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
-                    login: { 
-                        usuario: USUARIO_ACTUAL, 
-                        numeroPda: NUMERO_PDA, 
-                        device: DEVICE_ID_REAL, 
-                        fecha: new Date().toLocaleString() 
-                    } 
+                    login: { usuario: USUARIO_ACTUAL, numeroPda: NUMERO_PDA, device: DEVICE_ID_REAL, fecha: new Date().toLocaleString() } 
                 })
             });
-        } else { 
-            mostrarError("Usuario o PIN incorrecto"); 
+        } else {
+            mostrarError("Usuario o PIN incorrecto");
         }
-    } catch (e) { 
-        mostrarError("Error al validar datos. Reintente."); 
+    } catch(e) {
+        mostrarError("Error al validar datos. Reintente: " + e.message);
     } finally {
         document.getElementById("loader").style.display = "none";
     }
@@ -189,7 +180,7 @@ function abrirApp(pkg) {
 
 async function cerrarTurno() {
     if(!confirm("¿Deseas finalizar el turno y cerrar sesión?")) return;
-    
+
     const label = document.getElementById("pdaLabel");
     label.innerText = "CERRANDO SESIÓN...";
     document.getElementById("menuDiv").style.display = "none";
@@ -200,18 +191,13 @@ async function cerrarTurno() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-                logout: { 
-                    usuario: USUARIO_ACTUAL, 
-                    numeroPda: NUMERO_PDA, 
-                    device: DEVICE_ID_REAL, 
-                    fecha: new Date().toLocaleString() 
-                } 
+                logout: { usuario: USUARIO_ACTUAL, numeroPda: NUMERO_PDA, device: DEVICE_ID_REAL, fecha: new Date().toLocaleString() } 
             })
         });
-    } catch(e) { 
-        console.error("Error al registrar logout:", e); 
+    } catch(e) {
+        console.error("Error al registrar logout:", e);
     } finally {
-        location.reload(); 
+        location.reload();
     }
 }
 
