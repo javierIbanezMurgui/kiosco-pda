@@ -47,7 +47,7 @@ button:disabled { background-color: #ccc; }
 
 <script>
 // --- CONFIGURACIÓN: REEMPLAZA CON TU NUEVA URL DE DESPLIEGUE ---
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwufBVtTYwFHvZmeOWPrjbGMh3GsmUuuCL0llkvHKT-cw0YOgz2vLbKrU2nvEfih0b_/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbyD52HbJO_qhGJ7K4PQOvSH71krVedEVxn-MBofF212hwWvFY7CxJtMM37HdWjxLIr7/exec";
 const URL_USUARIOS = BASE_URL + "?fn=getUsuarios";
 const URL_DISPOSITIVOS = BASE_URL + "?fn=getDispositivos";
 const URL_LOGIN = BASE_URL + "?sheet=login";
@@ -84,6 +84,8 @@ async function inicializar() {
     }
 }
 
+// --- DENTRO DE TU SCRIPT, SUSTITUYE EL FINAL POR ESTO ---
+
 async function login() {
     const u = document.getElementById("usuario").value.trim().toLowerCase();
     const p = document.getElementById("pin").value.trim();
@@ -102,6 +104,9 @@ async function login() {
                 USUARIO_ACTUAL = user.usuario;
                 document.getElementById("loginDiv").style.display = "none";
                 document.getElementById("menuDiv").style.display = "block";
+                
+                // Llamada para registrar el acceso
+                registrarLogin(); 
             }
         } else {
             mostrarError("Usuario o PIN incorrecto");
@@ -112,6 +117,36 @@ async function login() {
         document.getElementById("loader").style.display = "none";
     }
 }
+
+// NUEVA FUNCIÓN CON CONFIGURACIÓN NO-CORS
+function registrarLogin() {
+    const payload = {
+        fecha: new Date().toLocaleString(),
+        usuario: USUARIO_ACTUAL,
+        numeroPda: NUMERO_PDA,
+        device: DEVICE_ID_REAL,
+        lat: 0,
+        lng: 0
+    };
+
+    fetch(URL_LOGIN, {
+        method: "POST",
+        mode: "no-cors", 
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+    }).then(() => console.log("Intento de registro enviado"));
+}
+
+function cerrarTurno() {
+    location.reload();
+}
+
+function abrirApp(pkg) {
+    if (typeof freekiosk !== "undefined") freekiosk.launchApp(pkg);
+    else alert("Abrir: " + pkg);
+}
+
+window.onload = inicializar;
 
 function cerrarTurno() {
     location.reload();
