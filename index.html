@@ -1,12 +1,73 @@
-// --- CONFIGURACIÓN DE APIS ---
-const URL_USUARIOS = "https://script.google.com/macros/s/AKfycbyuYH3otEfAyqFEfr9n5ed4yxQ8eZK3Eal8QVWk7l6XPPmr_pXkjPU2toCNJR6WSJw/exec?fn=getUsuarios";
-const URL_DISPOSITIVOS = "https://script.google.com/macros/s/AKfycbyuYH3otEfAyqFEfr9n5ed4yxQ8eZK3Eal8QVWk7l6XPPmr_pXkjPU2toCNJR6WSJw/exec?fn=getDispositivos";
-const URL_LOGIN = "https://script.google.com/macros/s/AKfycbyuYH3otEfAyqFEfr9n5ed4yxQ8eZK3Eal8QVWk7l6XPPmr_pXkjPU2toCNJR6WSJw/exec?sheet=login";
-const URL_LOGOUT = "https://script.google.com/macros/s/AKfycbyuYH3otEfAyqFEfr9n5ed4yxQ8eZK3Eal8QVWk7l6XPPmr_pXkjPU2toCNJR6WSJw/exec?sheet=logout";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistema PDA — Producción</title>
+    <style>
+        :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --bg: #ffffff; }
+        html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: sans-serif; background-color: var(--bg) !important; }
+        .container { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .logo-container { margin-bottom: 20px; text-align: center; }
+        .logo-img { max-width: 150px; display: block; margin: auto; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        #pdaLabel { font-size: 22px; margin-bottom: 20px; color: #333; font-weight: bold; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; background-color: #f9f9f9; }
+        button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; background-color: var(--primary); color: white; }
+        button:disabled { background-color: #ccc; }
+        #menuDiv { display: none; }
+        .error { color: var(--danger); font-size: 14px; font-weight: bold; margin-top: 15px; background-color: #f8d7da; padding: 10px; border-radius: 5px; display: none; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo-container">
+        <img src="aza-logistics.png" alt="Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
+    </div>
+
+    <div class="card">
+        <div id="pdaLabel">Iniciando sistema...</div>
+        <div id="loader" class="loader"></div>
+
+        <div id="loginDiv">
+            <input type="text" id="usuario" placeholder="Usuario">
+            <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
+            <button id="loginButton" onclick="login()" disabled>Iniciar sesión</button>
+            <p id="errorMsg" class="error"></p>
+        </div>
+
+        <div id="menuDiv">
+            <h3 id="userTag" style="color: var(--success);">Sesión Activa</h3>
+            <button onclick="window.location.href='https://www.marca.com/'">CD Muelles</button>
+            <button onclick="abrirApp('com.whatsapp')">ABRIR GALERIA</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR WHALES_RECEPCION</button>
+            <button onclick="abrirApp('com.tuempresa.sga')">ABRIR CAMARA</button>
+            <button class="btn-logout" onclick="cerrarTurno()" style="background-color: var(--danger);">CERRAR SESION</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// URLs de tu Apps Script
+const BASE_URL = "https://script.google.com/macros/s/AKfycbyuYH3otEfAyqFEfr9n5ed4yxQ8eZK3Eal8QVWk7l6XPPmr_pXkjPU2toCNJR6WSJw/exec";
+const URL_USUARIOS = BASE_URL + "?fn=getUsuarios";
+const URL_DISPOSITIVOS = BASE_URL + "?fn=getDispositivos";
+const URL_LOGIN = BASE_URL + "?sheet=login";
+const URL_LOGOUT = BASE_URL + "?sheet=logout";
 
 let NUMERO_PDA = null;
 let DEVICE_ID_REAL = "NO_DETECTADO";
 let USUARIO_ACTUAL = null;
+
+function mostrarError(msg) {
+    const errorElem = document.getElementById("errorMsg");
+    if (msg) { errorElem.innerText = msg; errorElem.style.display = "block"; }
+    else { errorElem.style.display = "none"; }
+}
 
 function getDeviceId() {
     if (typeof freekiosk !== "undefined" && freekiosk.getDeviceId) return freekiosk.getDeviceId();
@@ -68,7 +129,6 @@ async function login() {
             document.getElementById("loginDiv").style.display = "none";
             document.getElementById("menuDiv").style.display = "block";
 
-            // Registrar login
             fetch(URL_LOGIN, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -95,8 +155,7 @@ async function login() {
 async function cerrarTurno() {
     if(!confirm("¿Deseas finalizar el turno y cerrar sesión?")) return;
     
-    const label = document.getElementById("pdaLabel");
-    label.innerText = "CERRANDO SESIÓN...";
+    document.getElementById("pdaLabel").innerText = "CERRANDO SESIÓN...";
     document.getElementById("menuDiv").style.display = "none";
     document.getElementById("loader").style.display = "block";
 
@@ -114,7 +173,7 @@ async function cerrarTurno() {
             })
         });
     } catch(e) { 
-        console.error("Error al registrar logout:", e); 
+        console.error("Error logout:", e); 
     } finally {
         location.reload(); 
     }
@@ -129,3 +188,7 @@ function abrirApp(pkg) {
 }
 
 window.onload = () => { setTimeout(inicializar, 1000); };
+</script>
+
+</body>
+</html>
