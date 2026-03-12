@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Dashboard PDAs</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+padding:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+padding:12px;
+border:1px solid #ddd;
+text-align:center;
+}
+
+th{
+background:#007bff;
+color:white;
+}
+
+.online{
+color:green;
+font-weight:bold;
+}
+
+.offline{
+color:red;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Estado PDAs</h2>
+
+<table>
+
+<thead>
+
+<tr>
+<th>PDA</th>
+<th>Usuario</th>
+<th>Device</th>
+<th>Estado</th>
+<th>Hora</th>
+</tr>
+
+</thead>
+
+<tbody id="tabla"></tbody>
+
+</table>
+
+<script>
+
+const API="PEGA_AQUI_TU_API";
+
+async function cargar(){
+
+const resp=await fetch(API+"?action=dashboard");
+
+const data=await resp.json();
+
+if(data.status!="ok") return;
+
+let html="";
+
+data.datos.forEach(d=>{
+
+let estadoClass=d.estado=="ONLINE"?"online":"offline";
+
+html+=`
+<tr>
+<td>${d.pda}</td>
+<td>${d.usuario}</td>
+<td>${d.device}</td>
+<td class="${estadoClass}">${d.estado}</td>
+<td>${d.hora}</td>
+</tr>
+`;
+
+});
+
+document.getElementById("tabla").innerHTML=html;
+
+}
+
+cargar();
+
+setInterval(cargar,10000);
+
+</script>
+
+</body>
+</html>
