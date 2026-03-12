@@ -46,7 +46,9 @@
         <button onclick="abrirApp('com.whales.mobile')">📦 Whales</button>
         <button onclick="abrirApp('com.whales.recepcion')">📥 Whales Recepción</button>
         <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes PDA</button>
-        
+        <button onclick="window.location.href='intent:#Intent;package=com.android.settings;end'">
+  🧪 TEST: Abrir Ajustes (Hardcoded)
+</button>
         <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
     </div>
 </div>
@@ -128,15 +130,23 @@
         btn.innerText = "Entrar al Sistema";
     }
 
-    function abrirApp(packageName) {
-        if(typeof FreeKiosk !== "undefined") {
-            // Sintaxis definitiva para Android Intent
-            const intent = `intent:#Intent;package=${packageName};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end`;
+function abrirApp(packageName) {
+    if (typeof FreeKiosk !== "undefined") {
+        // Opción A: Intent clásico (que ya probamos)
+        var intent = "intent:#Intent;package=" + packageName + ";action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end";
+        
+        // Opción B (Más efectiva en muchas PDAs): 
+        // A veces el wrapper necesita que el esquema sea diferente
+        try {
             FreeKiosk.openUrl(intent);
-        } else {
-            alert("Intentando abrir app: " + packageName);
+        } catch (e) {
+            // Si falla, intentamos lanzar el paquete directamente si el wrapper lo permite
+            window.location.href = "market://details?id=" + packageName;
         }
+    } else {
+        alert("Simulación de apertura para: " + packageName);
     }
+}
 
     function logout() {
         // Opcional: Enviar evento logout a Google
