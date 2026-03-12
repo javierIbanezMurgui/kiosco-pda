@@ -3,318 +3,134 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema PDA — Producción</title>
-
+<title>PDA Sistema</title>
 <style>
-
-:root{
---primary:#007bff;
---danger:#dc3545;
---success:#28a745;
-}
-
-html,body{
-margin:0;
-padding:0;
-height:100%;
-font-family:sans-serif;
-background:#f5f5f5;
-}
-
-.container{
-height:100%;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-}
-
-.logo{
-width:200px;
-margin-bottom:20px;
-}
-
-.card{
-background:white;
-padding:30px;
-border-radius:15px;
-box-shadow:0 10px 25px rgba(0,0,0,0.1);
-width:350px;
-text-align:center;
-}
-
-input{
-width:100%;
-padding:14px;
-margin:10px 0;
-border-radius:8px;
-border:1px solid #ddd;
-font-size:16px;
-}
-
-button{
-width:100%;
-padding:15px;
-margin-top:10px;
-border:none;
-border-radius:8px;
-font-size:16px;
-background:var(--primary);
-color:white;
-cursor:pointer;
-}
-
-button:disabled{
-background:#ccc;
-}
-
-.error{
-color:red;
-margin-top:10px;
-display:none;
-}
-
-#menu{
-display:none;
-}
-
+body{font-family:Arial;background:#f5f5f5;margin:0;height:100vh;display:flex;justify-content:center;align-items:center}
+.card{background:white;padding:30px;border-radius:10px;width:350px;box-shadow:0 5px 20px rgba(0,0,0,0.2);text-align:center}
+input{width:100%;padding:12px;margin:10px 0;font-size:18px}
+button{width:100%;padding:12px;font-size:18px;margin-top:10px}
+#menu{display:none}
+.error{color:red}
 </style>
-
 </head>
-
 <body>
-
-<div class="container">
-
-<img src="aza-logistics.png" class="logo">
+    <div class="logo-container">
+        <img src="aza-logistics.png" alt="Logo" class="logo-img" id="companyLogo" onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
+    </div>
 
 <div class="card">
-
-<div id="pdaLabel">Iniciando...</div>
-
+<h2 id="pdaLabel">Detectando PDA...</h2>
 <div id="login">
-
 <input id="usuario" placeholder="Usuario">
 <input id="pin" type="password" placeholder="PIN">
-
-<button id="loginBtn" onclick="login()" disabled>
-Iniciar sesión
-</button>
-
-<div id="error" class="error"></div>
-
+<button onclick="login()">Entrar</button>
+<p id="error" class="error"></p>
 </div>
-
 <div id="menu">
-
-<h3 id="usuarioActivo"></h3>
-
-<button onclick="abrirUrl()">CD Muelles</button>
-
-<button onclick="abrirApp('com.android.camera')">
-Abrir cámara
-</button>
-
-<button onclick="logout()"
-style="background:#dc3545">
-Cerrar sesión
-</button>
-
+<h3 id="operario"></h3>
+<button onclick="abrirCamara()">Abrir Cámara</button>
+<button onclick="abrirGaleria()">Abrir Galería</button>
+<button onclick="abrirURL('https://www.marca.com')">Abrir URL</button>
+<button onclick="logout()">Cerrar sesión</button>
 </div>
-
-</div>
-
 </div>
 
 <script>
-
-const API="https://script.google.com/macros/s/AKfycbzf2GlbYIFhoZFEHHqfXPpix84yh5efZ9_Ua_Jv32tW1jFie2zi8uet-uAUnuG8nwpK/exec";
-
-let DEVICE="";
+const API="https://script.google.com/macros/s/AKfycbytu6h0ZvDWjrpafr97HGgZnP0JkEzxSw9gWsi0rM2qLDbpy28qvq6KgntUJ3Zi_lrg/exec";
+let DEVICE_ID="PDA_TEST";
 let NUMERO_PDA=null;
-let USUARIO=null;
+let USUARIO_ACTUAL=null;
 
-
-
-function getDeviceId(){
-
-if(typeof FreeKiosk!=="undefined" && FreeKiosk.getDeviceId)
-return FreeKiosk.getDeviceId();
-
-return "TEST_DEVICE";
-
+// --- Obtener DeviceID de Free Kiosk ---
+function obtenerDeviceId(){
+    if(window.Kiosk && window.Kiosk.deviceId) return window.Kiosk.deviceId;
+    if(window.deviceId) return window.deviceId;
+    return "PDA_TEST";
 }
 
-
-
-function showError(msg){
-
-const e=document.getElementById("error");
-
-if(msg){
-
-e.innerText=msg;
-e.style.display="block";
-
-}else{
-
-e.style.display="none";
-
+// --- Obtener ubicación automáticamente ---
+function obtenerUbicacion(){
+    return new Promise(resolve=>{
+        if(!navigator.geolocation){resolve({lat:0,lng:0}); return;}
+        navigator.geolocation.getCurrentPosition(
+            pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}),
+            ()=>resolve({lat:0,lng:0})
+        );
+    });
 }
 
+// --- Inicializar PDA ---
+async function init(){
+    DEVICE_ID = obtenerDeviceId();
+    const res = await fetch(API+"?type=dispositivos");
+    const data = await res.json();
+    const d = data.dispositivos.find(x=>x.device===DEVICE_ID);
+    if(d){NUMERO_PDA=d.numeroPda; document.getElementById("pdaLabel").innerText="PDA Nº "+NUMERO_PDA;}
+    else{document.getElementById("pdaLabel").innerText="PDA NO REGISTRADA";}
 }
+init();
 
-
-
-async function inicializar(){
-
-DEVICE=getDeviceId();
-
-document.getElementById("pdaLabel").innerText="Detectando dispositivo...";
-
-try{
-
-const res=await fetch(API+"?action=init");
-
-const data=await res.json();
-
-const dispositivos=data.dispositivos;
-
-for(let i=0;i<dispositivos.length;i++){
-
-if(dispositivos[i][0]==DEVICE){
-
-NUMERO_PDA=dispositivos[i][1];
-
-}
-
-}
-
-if(NUMERO_PDA){
-
-document.getElementById("pdaLabel").innerText=
-"PDA Nº "+NUMERO_PDA;
-
-document.getElementById("loginBtn").disabled=false;
-
-}else{
-
-document.getElementById("pdaLabel").innerText=
-"Dispositivo no registrado";
-
-}
-
-}catch(e){
-
-document.getElementById("pdaLabel").innerText=
-"Error conexión API";
-
-}
-
-}
-
-
-
+// --- Login ---
 async function login(){
+    const u = document.getElementById("usuario").value;
+    const p = document.getElementById("pin").value;
+    const res = await fetch(API+"?type=usuarios");
+    const data = await res.json();
+    const user = data.usuarios.find(x=>x.usuario==u && x.pin==p);
+    if(!user){error("Usuario o PIN incorrecto"); return;}
+    if(user.activo!=1){error("Usuario bloqueado"); return;}
+    if(user.pdaAsignada!=NUMERO_PDA){error("No es tu PDA. Tu PDA es la Nº "+user.pdaAsignada); return;}
+    USUARIO_ACTUAL = user.usuario;
+    document.getElementById("login").style.display="none";
+    document.getElementById("menu").style.display="block";
+    document.getElementById("operario").innerText="Operario: "+USUARIO_ACTUAL;
 
-showError("");
-
-const usuario=document.getElementById("usuario").value;
-const pin=document.getElementById("pin").value;
-
-if(!usuario||!pin)
-return showError("Introduce usuario y PIN");
-
-navigator.geolocation.getCurrentPosition(async function(pos){
-
-const res=await fetch(API,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-login:{
-usuario:usuario,
-pin:pin,
-device:DEVICE,
-lat:pos.coords.latitude,
-lng:pos.coords.longitude
-}
-})
-});
-
-const r=await res.json();
-
-if(r.status=="ok"){
-
-USUARIO=usuario;
-
-document.getElementById("login").style.display="none";
-document.getElementById("menu").style.display="block";
-
-document.getElementById("usuarioActivo").innerText=
-"Operario: "+usuario;
-
-}else{
-
-showError(r.msg);
-
+    const ubicacion = await obtenerUbicacion();
+    // Registrar login con ubicación
+    fetch(API,{
+        method:"POST",
+        body:JSON.stringify({
+            type:"login",
+            usuario:USUARIO_ACTUAL,
+            numeroPda:NUMERO_PDA,
+            device:DEVICE_ID,
+            lat:ubicacion.lat,
+            lng:ubicacion.lng
+        })
+    });
 }
 
-});
-
-}
-
-
-
-function abrirUrl(){
-
-window.location.href="https://www.marca.com/";
-
-}
-
-
-
-function abrirApp(pkg){
-
-if(typeof FreeKiosk!=="undefined" && FreeKiosk.launchApp)
-FreeKiosk.launchApp(pkg);
-
-}
-
-
-
+// --- Logout ---
 async function logout(){
-
-navigator.geolocation.getCurrentPosition(async function(pos){
-
-await fetch(API,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-logout:{
-usuario:USUARIO,
-numeroPda:NUMERO_PDA,
-device:DEVICE,
-lat:pos.coords.latitude,
-lng:pos.coords.longitude
-}
-})
-});
-
-location.reload();
-
-});
-
+    const ubicacion = await obtenerUbicacion();
+    fetch(API,{
+        method:"POST",
+        body:JSON.stringify({
+            type:"logout",
+            usuario:USUARIO_ACTUAL,
+            numeroPda:NUMERO_PDA,
+            device:DEVICE_ID,
+            lat:ubicacion.lat,
+            lng:ubicacion.lng
+        })
+    });
+    location.reload();
 }
 
+// --- Control de sesión única (desconecta si inicia en otra PDA) ---
+async function verificarSesion(){
+    const res = await fetch(API+"?type=sesiones");
+    const data = await res.json();
+    const sesion = data.sesiones.find(x=>x.usuario==USUARIO_ACTUAL);
+    if(!sesion || sesion.device!=DEVICE_ID){alert("Sesión iniciada en otra PDA"); location.reload();}
+}
+setInterval(()=>{if(USUARIO_ACTUAL) verificarSesion();},20000);
 
-
-window.onload=()=>{
-
-setTimeout(inicializar,1000);
-
-};
-
+// --- Botones ---
+function abrirCamara(){alert("Aquí se abriría la cámara");}
+function abrirGaleria(){alert("Aquí se abriría la galería");}
+function abrirURL(url){window.location.href=url;}
+function error(msg){document.getElementById("error").innerText=msg;}
 </script>
-
 </body>
 </html>
