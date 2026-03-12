@@ -134,9 +134,6 @@ Iniciar sesión
 <button onclick="abrirApp('com.whales.recepcion')">📥 Whales Recepción</button>
 
 <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
-<button onclick="window.location.href='intent:#Intent;package=com.android.settings;end'">
-  🧪 TEST: Abrir Ajustes (Hardcoded)
-</button>
 
 <button onclick="logout()" style="background:#d9534f">
 Cerrar sesión
@@ -311,22 +308,20 @@ window.location.href="https://www.marca.com";
 
 
 
-function abrirApp(packageName) {
-    if (typeof FreeKiosk !== "undefined") {
-        // Opción A: Intent clásico (que ya probamos)
-        var intent = "intent:#Intent;package=" + packageName + ";action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end";
-        
-        // Opción B (Más efectiva en muchas PDAs): 
-        // A veces el wrapper necesita que el esquema sea diferente
-        try {
-            FreeKiosk.openUrl(intent);
-        } catch (e) {
-            // Si falla, intentamos lanzar el paquete directamente si el wrapper lo permite
-            window.location.href = "market://details?id=" + packageName;
-        }
-    } else {
-        alert("Simulación de apertura para: " + packageName);
-    }
+/* FUNCION UNIVERSAL PARA ABRIR APPS */
+
+function abrirApp(packageName){
+
+if(typeof FreeKiosk !== "undefined"){
+
+FreeKiosk.openUrl("intent:#Intent;package="+packageName+";end");
+
+}else{
+
+alert("Solo funciona en la PDA");
+
+}
+
 }
 
 
