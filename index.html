@@ -38,12 +38,13 @@ font-size:16px;
 
 button{
 width:100%;
-padding:12px;
+padding:14px;
 background:#007bff;
 color:white;
 border:none;
-border-radius:5px;
+border-radius:6px;
 font-size:16px;
+margin-top:8px;
 }
 
 button:disabled{
@@ -61,14 +62,14 @@ display:none;
 }
 
 .logo-container {
-    text-align: center;
-    margin-bottom: 20px;
+text-align: center;
+margin-bottom: 20px;
 }
 
 .logo-img {
-    max-width: 150px;
-    height: auto;
-    display: inline-block;
+max-width: 150px;
+height: auto;
+display: inline-block;
 }
 
 </style>
@@ -77,15 +78,15 @@ display:none;
 
 <body>
 
-
 <div class="card">
 
-<!-- LOGO AZA LOGISTICS -->
 <div class="logo-container">
-    <img src="aza-logistics.png" alt="Logo" class="logo-img" id="companyLogo" 
-         onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
+<img src="aza-logistics.png"
+alt="Logo"
+class="logo-img"
+onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
 </div>
-    
+
 <h2 id="pdaLabel">Cargando sistema...</h2>
 
 <div id="login">
@@ -102,23 +103,29 @@ Iniciar sesión
 
 </div>
 
-<div id="menu" style="display:none">
+
+<div id="menu">
 
 <h3 id="usuarioActivo"></h3>
 
 <button onclick="abrirUrl()">CD Muelles</button>
 
-<button onclick="abrirApp('camera')">Abrir Cámara</button>
+<button onclick="abrirCamara()">📷 Cámara</button>
 
-<button onclick="abrirApp('gallery')">Abrir Galería</button>
+<button onclick="abrirGaleria()">🖼 Galería</button>
 
-<button onclick="abrirApp('whales')">Abrir Whales</button>
+<button onclick="abrirWhales()">📦 Whales</button>
 
-<button onclick="abrirApp('whales_recepcion')">Whales Recepción</button>
+<button onclick="abrirWhalesRecepcion()">📥 Whales Recepción</button>
 
-<button onclick="logout()" style="background:#d9534f">Cerrar sesión</button>
+<button onclick="logout()" style="background:#d9534f">
+Cerrar sesión
+</button>
 
 </div>
+
+</div>
+
 
 <script>
 
@@ -280,6 +287,42 @@ btn.innerText="Iniciar sesión";
 function abrirUrl(){
 
 window.location.href="https://www.marca.com";
+
+}
+
+
+
+function abrirCamara(){
+
+if(typeof FreeKiosk!=="undefined")
+FreeKiosk.launchApp("com.android.camera");
+
+}
+
+
+
+function abrirGaleria(){
+
+if(typeof FreeKiosk!=="undefined")
+FreeKiosk.launchApp("com.android.gallery");
+
+}
+
+
+
+function abrirWhales(){
+
+if(typeof FreeKiosk!=="undefined")
+FreeKiosk.launchApp("com.whales.app");
+
+}
+
+
+
+function abrirWhalesRecepcion(){
+
+if(typeof FreeKiosk!=="undefined")
+FreeKiosk.launchApp("com.whales.recepcion");
 
 }
 
