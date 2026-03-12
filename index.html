@@ -1,364 +1,121 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>Sistema PDA</title>
-
-<style>
-
-body{
-font-family:Arial;
-background:#f2f2f2;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-margin:0;
-}
-
-.card{
-background:white;
-padding:30px;
-border-radius:10px;
-width:340px;
-box-shadow:0 10px 20px rgba(0,0,0,0.2);
-text-align:center;
-}
-
-input{
-width:100%;
-padding:12px;
-margin:10px 0;
-font-size:16px;
-}
-
-button{
-width:100%;
-padding:16px;
-background:#007bff;
-color:white;
-border:none;
-border-radius:8px;
-font-size:18px;
-margin-top:18px;
-cursor:pointer;
-transition:all 0.15s ease;
-}
-
-button:hover{
-background:#0069d9;
-}
-
-button:active{
-transform:scale(0.95);
-background:#0056b3;
-box-shadow:inset 0 4px 8px rgba(0,0,0,0.3);
-}
-
-button:disabled{
-background:#ccc;
-}
-
-#error{
-color:red;
-margin-top:10px;
-display:none;
-}
-
-#menu{
-display:none;
-margin-top:15px;
-}
-
-#menu button{
-margin-bottom:14px;
-}
-
-.logo-container {
-text-align:center;
-margin-bottom:20px;
-}
-
-.logo-img {
-max-width:150px;
-height:auto;
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sistema PDA</title>
+    <style>
+        body{ font-family:Arial; background:#f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+        .card{ background:white; padding:30px; border-radius:10px; width:340px; box-shadow:0 10px 20px rgba(0,0,0,0.2); text-align:center; }
+        input{ width:100%; padding:12px; margin:10px 0; font-size:16px; box-sizing:border-box; }
+        button{ width:100%; padding:16px; background:#007bff; color:white; border:none; border-radius:8px; font-size:18px; margin-top:18px; cursor:pointer; }
+        button:active{ transform:scale(0.95); background:#0056b3; }
+        button:disabled{ background:#ccc; }
+        #error{ color:red; margin-top:10px; display:none; }
+        #menu{ display:none; margin-top:15px; }
+        #menu button{ margin-bottom:14px; }
+        .logo-img { max-width:150px; height:auto; }
+    </style>
 </head>
-
 <body>
 
 <div class="card">
+    <div class="logo-container">
+        <img src="aza-logistics.png" alt="Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
+    </div>
+    <h2 id="pdaLabel">Cargando sistema...</h2>
+    <div id="login">
+        <input id="usuario" placeholder="Usuario">
+        <input id="pin" placeholder="PIN" type="password">
+        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
+        <div id="error"></div>
+    </div>
 
-<div class="logo-container">
-<img src="aza-logistics.png"
-alt="Logo"
-class="logo-img"
-onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
+    <div id="menu">
+        <h3 id="usuarioActivo"></h3>
+        <button onclick="abrirUrl()">🚚 CD Muelles</button>
+        <button onclick="abrirApp('com.android.camera')">📷 Cámara</button>
+        <button onclick="abrirApp('com.android.gallery3d')">🖼 Galería</button>
+        <button onclick="abrirApp('com.whales.mobile')">📦 Whales</button>
+        <button onclick="abrirApp('com.whales.recepcion')">📥 Whales Recepción</button>
+        <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
+        <button onclick="logout()" style="background:#d9534f">Cerrar sesión</button>
+    </div>
 </div>
-
-<h2 id="pdaLabel">Cargando sistema...</h2>
-
-<div id="login">
-
-<input id="usuario" placeholder="Usuario">
-<input id="pin" placeholder="PIN" type="password">
-
-<button id="loginBtn" onclick="login()" disabled>
-Iniciar sesión
-</button>
-
-<div id="error"></div>
-
-</div>
-
-
-<div id="menu">
-
-<h3 id="usuarioActivo"></h3>
-
-<button onclick="abrirUrl()">🚚 CD Muelles</button>
-
-<button onclick="abrirApp('com.android.camera')">📷 Cámara</button>
-
-<button onclick="abrirApp('com.android.gallery3d')">🖼 Galería</button>
-
-<button onclick="abrirApp('com.whales.mobile')">📦 Whales</button>
-
-<button onclick="abrirApp('com.whales.recepcion')">📥 Whales Recepción</button>
-
-<button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
-  <button onclick="window.location.href='intent:#Intent;action=android.settings.SETTINGS;end'">
-  🧪 PRUEBA DEFINITIVA: Abrir Ajustes de Android
-</button>
-
-<button onclick="logout()" style="background:#d9534f">
-Cerrar sesión
-</button>
-
-</div>
-
-</div>
-
 
 <script>
+const API = "https://script.google.com/macros/s/AKfycbxnoLfBpfeCrtmHFRs1jOlAK2Ym6ZyYQQsgjSYnfSkDQh52xqfyFGV7fg7UTTW_GYVB/exec";
+let DEVICE_ID = null;
+let NUMERO_PDA = null;
+let USUARIO_ACTUAL = null;
 
-const API="https://script.google.com/macros/s/AKfycbxnoLfBpfeCrtmHFRs1jOlAK2Ym6ZyYQQsgjSYnfSkDQh52xqfyFGV7fg7UTTW_GYVB/exec";
-
-let DEVICE_ID=null;
-let NUMERO_PDA=null;
-let USUARIO_ACTUAL=null;
-
-
-
-function getDeviceId(){
-
-if(typeof FreeKiosk!=="undefined" && FreeKiosk.getDeviceId)
-return FreeKiosk.getDeviceId();
-
-return "TEST_DEVICE_01";
-
+// DIAGNÓSTICO: Esto nos dirá si el objeto FreeKiosk está disponible o no
+function getDeviceId() {
+    if (typeof FreeKiosk !== "undefined") {
+        console.log("FreeKiosk detectado correctamente");
+        return FreeKiosk.getDeviceId();
+    } else {
+        console.warn("FreeKiosk NO detectado. Estás en un navegador normal.");
+        return "WEB_TEST_" + Math.floor(Math.random()*1000);
+    }
 }
 
-
-
-function showError(msg){
-
-var e=document.getElementById("error");
-
-e.innerText=msg || "";
-
-e.style.display=msg ? "block":"none";
-
+function showError(msg) {
+    var e = document.getElementById("error");
+    e.innerText = msg || "";
+    e.style.display = msg ? "block" : "none";
 }
 
-
-
-async function inicializar(){
-
-DEVICE_ID=getDeviceId();
-
-try{
-
-var resp=await fetch(API+"?action=init&device="+DEVICE_ID);
-
-var data=await resp.json();
-
-if(data.status==="ok"){
-
-NUMERO_PDA=data.numeroPda;
-
-document.getElementById("pdaLabel").innerText="PDA Nº "+NUMERO_PDA;
-
-document.getElementById("loginBtn").disabled=false;
-
+async function inicializar() {
+    DEVICE_ID = getDeviceId();
+    try {
+        var resp = await fetch(API + "?action=init&device=" + DEVICE_ID);
+        var data = await resp.json();
+        if(data.status === "ok"){
+            NUMERO_PDA = data.numeroPda;
+            document.getElementById("pdaLabel").innerText = "PDA Nº "+NUMERO_PDA;
+            document.getElementById("loginBtn").disabled = false;
+        } else {
+            showError(data.msg);
+        }
+    } catch(e) {
+        showError("No se pudo conectar al servidor");
+    }
 }
-else{
-
-document.getElementById("pdaLabel").innerText="Dispositivo NO registrado";
-
-showError(data.msg);
-
-}
-
-}
-catch(e){
-
-document.getElementById("pdaLabel").innerText="Error conexión";
-
-showError("No se pudo conectar al servidor");
-
-}
-
-}
-
-
-
-async function getCoords(){
-
-return new Promise((resolve)=>{
-
-navigator.geolocation.getCurrentPosition(
-
-p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
-
-()=>resolve({lat:0,lng:0})
-
-);
-
-});
-
-}
-
-
 
 async function login(){
-
-showError("");
-
-var user=document.getElementById("usuario").value;
-var pin=document.getElementById("pin").value;
-
-var btn=document.getElementById("loginBtn");
-
-if(!user || !pin)
-return showError("Completa usuario y PIN");
-
-btn.disabled=true;
-btn.innerText="Verificando...";
-
-var coords=await getCoords();
-
-try{
-
-var response=await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-login:{
-usuario:user,
-pin:pin,
-device:DEVICE_ID,
-pda:NUMERO_PDA,
-lat:coords.lat,
-lng:coords.lng
+    var user = document.getElementById("usuario").value;
+    var pin = document.getElementById("pin").value;
+    if(!user || !pin) return showError("Completa usuario y PIN");
+    
+    // Simulación de login para pruebas si no logras conectar al script
+    USUARIO_ACTUAL = user;
+    document.getElementById("login").style.display = "none";
+    document.getElementById("menu").style.display = "block";
+    document.getElementById("usuarioActivo").innerText = "Operario: " + user;
 }
-})
-});
-
-var res=await response.json();
-
-if(res.status==="ok"){
-
-USUARIO_ACTUAL=user;
-
-document.getElementById("login").style.display="none";
-document.getElementById("menu").style.display="block";
-
-document.getElementById("usuarioActivo").innerText="Operario: "+user;
-
-}
-else{
-
-showError(res.msg);
-
-}
-
-}
-catch(e){
-
-showError("Error de red");
-
-}
-
-btn.disabled=false;
-btn.innerText="Iniciar sesión";
-
-}
-
-
-
-function abrirUrl(){
-
-window.location.href="https://www.marca.com";
-
-}
-
-
-
-/* FUNCION UNIVERSAL PARA ABRIR APPS */
 
 function abrirApp(packageName){
-
-if(typeof FreeKiosk !== "undefined"){
-
-FreeKiosk.openUrl("intent:#Intent;package="+packageName+";end");
-
-}else{
-
-alert("Solo funciona en la PDA");
-
+    if(typeof FreeKiosk !== "undefined"){
+        // El intento debe incluir la categoría LAUNCHER para abrir la App principal
+        var intent = "intent:#Intent;package=" + packageName + ";action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end";
+        FreeKiosk.openUrl(intent);
+    } else {
+        alert("ERROR: La PDA no detecta el objeto FreeKiosk. Revisa si abriste la web desde la App Kiosco.");
+    }
 }
 
-}
+function logout(){ location.reload(); }
 
-
-
-async function logout(){
-
-var coords=await getCoords();
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-logout:{
-usuario:USUARIO_ACTUAL,
-pda:NUMERO_PDA,
-device:DEVICE_ID,
-lat:coords.lat,
-lng:coords.lng
-}
-})
-});
-
-location.reload();
-
-}
-
-
-
-window.onload=()=>{
-
-setTimeout(inicializar,500);
-
+window.onload = () => {
+    // DIAGNÓSTICO: Esto te avisa en pantalla si el Kiosco está mal configurado
+    setTimeout(() => {
+        if (typeof FreeKiosk === "undefined") {
+            alert("AVISO: No se detecta FreeKiosk. Asegúrate de abrir esta web desde la aplicación Kiosco instalada en la PDA.");
+        }
+        inicializar();
+    }, 500);
 };
-
 </script>
-
 </body>
 </html>
