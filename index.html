@@ -11,10 +11,25 @@
         button { background:#007bff; color:white; border:none; font-size:16px; font-weight:bold; }
         #menu, #error { display:none; margin-top:20px; }
         .btn-admin { position:fixed; bottom:0; right:0; width:40px; height:40px; opacity:0; }
+        button:active{
+transform:scale(0.95);
+background:#0056b3;
+box-shadow:inset 0 4px 8px rgba(0,0,0,0.3);
+}
+        .logo-img {
+max-width:150px;
+height:auto;
+}
     </style>
 </head>
 <body>
     <div class="card">
+        <div class="logo-container">
+<img src="aza-logistics.png"
+alt="Logo"
+class="logo-img"
+onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
+</div>
         <h2 id="pdaLabel">Cargando...</h2>
         <div id="login">
             <input id="usuario" placeholder="Usuario">
