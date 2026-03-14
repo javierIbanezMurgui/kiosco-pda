@@ -21,11 +21,14 @@ max-width:150px;
 height:auto;
 }
 
-        #error{
-color:red;
-margin-top:10px;
-display:none;
+.btn-logout{
+background:#dc3545;
 }
+
+.btn-logout:active{
+background:#a71d2a;
+}
+
     </style>
 </head>
 <body>
@@ -49,7 +52,8 @@ onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
             <button onclick="abrirApp('com.android.camera2')">📷 Prueba Cámara Alternativa</button>
             <button onclick="abrirApp('com.csdroid.pkg')">📷 package names</button>
             <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
-            <button onclick="logout()">Cerrar sesión</button>
+            <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+
         </div>
     </div>
     <button class="btn-admin" onclick="admin()"></button>
