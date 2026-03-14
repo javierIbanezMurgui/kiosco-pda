@@ -115,7 +115,26 @@ function abrirApp(pkg) {
 }
 
         function admin() { if(prompt("PIN Admin:") === "1234") window.location.href = "intent://admin"; }
-        function logout() { location.reload(); }
+        async function logout(){
+
+var coords=await getCoords();
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+logout:{
+usuario:USUARIO_ACTUAL,
+pda:NUMERO_PDA,
+device:DEVICE_ID,
+lat:coords.lat,
+lng:coords.lng
+}
+})
+});
+
+location.reload();
+
+}
 
         window.onload = inicializar;
     </script>
