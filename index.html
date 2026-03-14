@@ -54,6 +54,31 @@
             } catch(e) { document.getElementById("pdaLabel").innerText = "Error conexión"; }
         }
 
+        async function login() {
+            let u = document.getElementById("usuario").value;
+            let p = document.getElementById("pin").value;
+            let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "");
+            
+            document.getElementById("error").innerText = "Validando...";
+            document.getElementById("error").style.display = "block";
+
+            try {
+                // Usamos la misma URL base y pasamos los parámetros de login
+                let resp = await fetch(`${API}?action=login&user=${u}&pin=${p}&pda=${pda}`);
+                let data = await resp.json();
+                
+                if (data.status === "ok") {
+                    document.getElementById("login").style.display = "none";
+                    document.getElementById("menu").style.display = "block";
+                    document.getElementById("pdaLabel").innerText = "Bienvenido";
+                } else {
+                    document.getElementById("error").innerText = data.msg;
+                }
+            } catch(e) { 
+                document.getElementById("error").innerText = "Error de servidor"; 
+            }
+        }
+
         function abrirApp(pkg) { window.location.href = "intent:#Intent;package=" + pkg + ";end"; }
         function admin() { if(prompt("PIN Admin:") === "1234") window.location.href = "intent://admin"; }
         function logout() { location.reload(); }
