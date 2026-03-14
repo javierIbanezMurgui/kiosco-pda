@@ -54,7 +54,6 @@ onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
             <button onclick="abrirApp('com.csdroid.pkg')">📷 package names</button>
             <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
             <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
->
 
         </div>
     </div>
@@ -88,7 +87,7 @@ onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
             let p = document.getElementById("pin").value;
             let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "");
             
-            document.getElementById("error").innerText = "Validando...";
+            document.getElementById("error").innerText = "Iniciando sesión...";
             document.getElementById("error").style.display = "block";
 
             try {
