@@ -79,7 +79,16 @@
             }
         }
 
-        function abrirApp(pkg) { window.location.href = "intent:#Intent;package=" + pkg + ";end"; }
+        function abrirApp(pkg) { 
+    // Si quieres abrir una app específica (Ajustes, por ejemplo)
+    if (pkg === 'com.android.settings') {
+        window.location.href = "intent:#Intent;action=android.settings.SETTINGS;end";
+    } 
+    // Si quieres abrir la cámara genérica
+    else if (pkg === 'camera') {
+        window.location.href = "intent:#Intent;action=android.media.action.IMAGE_CAPTURE;end";
+    }
+}
         function admin() { if(prompt("PIN Admin:") === "1234") window.location.href = "intent://admin"; }
         function logout() { location.reload(); }
 
