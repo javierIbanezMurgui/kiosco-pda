@@ -7,76 +7,120 @@
 
 <style>
 body{
-    font-family:Arial;
-    background:#f2f2f2;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    margin:0;
+    font-family: Arial;
+    background: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
 }
 
 .card{
-    background:white;
-    padding:30px;
-    border-radius:10px;
-    width:300px;
-    text-align:center;
-    box-shadow:0 5px 15px rgba(0,0,0,0.2);
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 300px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 input, button {
-    width: 90%;                /* ligeramente más estrecho para que no quede pegado al borde */
-    padding: 12px 0;           /* padding vertical para que el texto quede centrado */
-    margin: 10px 0;            /* espacio entre campos */
+    width: 90%;
+    padding: 12px 0;
+    margin: 10px 0;
     border-radius: 5px;
     border: 1px solid #ccc;
-    box-sizing: border-box;    /* hace que el padding no empuje el contenido */
-    text-align: center;        /* centra el texto dentro del input o botón */
-    display: block;            /* asegura que el elemento ocupe toda la línea */
-    margin-left: auto;         /* centra horizontalmente */
-    margin-right: auto;        /* centra horizontalmente */
+    box-sizing: border-box;
+    text-align: center;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
     font-size: 16px;
 }
 
-button:active{
-    transform:scale(0.95);
-    background:#0056b3;
-    box-shadow:inset 0 4px 8px rgba(0,0,0,0.3);
+/* BOTÓN INICIAR SESIÓN */
+#loginBtn {
+    background: #007bff; /* azul vivo */
+    color: white;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-button:disabled{
-    background:#ccc;
+#loginBtn:active {
+    background: #0056b3; /* azul más oscuro al pulsar */
+    transform: scale(0.95);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* BOTONES DEL MENÚ */
+#menu button {
+    background: #007bff; /* azul vivo */
+    color: white;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    display: block;
+    width: 90%;
+    padding: 12px 0;
+    margin: 8px 0;
+    border-radius: 5px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#menu button:active {
+    background: #0056b3; /* azul más oscuro al pulsar */
+    transform: scale(0.95);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* BOTÓN CERRAR SESIÓN */
+.btn-logout {
+    background: #dc3545; /* rojo vivo */
+    color: white;
+}
+
+.btn-logout:active {
+    background: #a71d2a; /* rojo más oscuro al pulsar */
+    transform: scale(0.95);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* DESHABILITADOS SI LOS HAY */
+button:disabled {
+    background: #ccc;
+    color: white;
 }
 
 #error{
-    color:red;
-    margin-top:10px;
-    display:none;
+    color: red;
+    margin-top: 10px;
+    display: none;
+    text-align: center;
 }
 
 #menu{
-    display:none;
-    margin-top:15px;
-}
-
-#menu button{
-    margin-bottom:14px;
+    display: none;
+    margin-top: 15px;
 }
 
 .logo-container {
-    text-align:center;
-    margin-bottom:20px;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 .logo-img {
-    max-width:150px;
-    height:auto;
+    max-width: 150px;
+    height: auto;
 }
-
-.btn-logout{
-    background:#dc3545;
-}
+</style>
 
 </style>
 </head>
