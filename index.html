@@ -25,20 +25,18 @@ body{
     box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
 
-input,button{
-    width:100%;
-    padding:15px;
-    margin:10px 0;
-    border-radius:5px;
-    border:1px solid #ccc;
-}
-
-button{
-    background:#007bff;
-    color:white;
-    border:none;
-    font-size:16px;
-    font-weight:bold;
+input, button {
+    width: 90%;                /* ligeramente más estrecho para que no quede pegado al borde */
+    padding: 12px 0;           /* padding vertical para que el texto quede centrado */
+    margin: 10px 0;            /* espacio entre campos */
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;    /* hace que el padding no empuje el contenido */
+    text-align: center;        /* centra el texto dentro del input o botón */
+    display: block;            /* asegura que el elemento ocupe toda la línea */
+    margin-left: auto;         /* centra horizontalmente */
+    margin-right: auto;        /* centra horizontalmente */
+    font-size: 16px;
 }
 
 button:active{
