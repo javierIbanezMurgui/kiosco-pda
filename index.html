@@ -1,122 +1,228 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Sistema PDA Aza</title>
-    <style>
-        body { font-family: Arial; background:#f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-        .card { background:white; padding:30px; border-radius:10px; width:300px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.2); }
-        input, button { width:100%; padding:15px; margin:10px 0; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
-        button { background:#007bff; color:white; border:none; font-size:16px; font-weight:bold; }
-        #menu, #error { display:none; margin-top:20px; }
-        .btn-admin { position:fixed; bottom:0; right:0; width:40px; height:40px; opacity:0; }
-        button:active{
-transform:scale(0.95);
-background:#0056b3;
-box-shadow:inset 0 4px 8px rgba(0,0,0,0.3);
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Sistema PDA Aza</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
 }
-        .logo-img {
+
+.card{
+background:white;
+padding:30px;
+border-radius:10px;
+width:300px;
+text-align:center;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+input,button{
+width:100%;
+padding:15px;
+margin:10px 0;
+border-radius:5px;
+border:1px solid #ccc;
+}
+
+button{
+background:#007bff;
+color:white;
+border:none;
+font-size:16px;
+font-weight:bold;
+}
+
+#menu,#error{
+display:none;
+margin-top:20px;
+}
+
+.logo-img{
 max-width:150px;
-height:auto;
 }
 
 .btn-logout{
-background:#dc3545 !important;
+background:#dc3545;
 }
 
-.btn-logout:active{
-background:#a71d2a !important;
-}
+</style>
 
-
-    </style>
 </head>
+
 <body>
-    <div class="card">
-        <div class="logo-container">
-<img src="aza-logistics.png"
-alt="Logo"
-class="logo-img"
-onerror="this.src='https://via.placeholder.com/150x50?text=LOGO+PENDIENTE'">
+
+<div class="card">
+
+<img src="aza-logistics.png" class="logo-img">
+
+<h2 id="pdaLabel">Cargando...</h2>
+
+<div id="login">
+
+<input id="usuario" placeholder="Usuario">
+<input id="pin" placeholder="PIN" type="password">
+
+<button id="loginBtn" onclick="login()" disabled>
+Iniciar sesión
+</button>
+
+<div id="error"></div>
+
 </div>
-        <h2 id="pdaLabel">Cargando...</h2>
-        <div id="login">
-            <input id="usuario" placeholder="Usuario">
-            <input id="pin" placeholder="PIN" type="password">
-            <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
-            <div id="error"></div>
-        </div>
-        <div id="menu">
-            <button onclick="window.location.href='https://www.marca.com'">🚚 CD Muelles</button>
-            <button onclick="abrirApp('com.google.android.apps.photos')">📷 Galeria</button>
-            <button onclick="abrirApp('com.android.camera2')">📷 Prueba Cámara Alternativa</button>
-            <button onclick="abrirApp('com.csdroid.pkg')">📷 package names</button>
-            <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
-            <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
 
-        </div>
-    </div>
-    <button class="btn-admin" onclick="admin()"></button>
 
-    <script>
-        const API = "https://script.google.com/macros/s/AKfycbz5C_j6mo__iN82Sg3CPVj6P_k4oEy_1MSYrrSPfWquxxdoxNdA22CiqIkWSOfukVMx/exec"; // Asegúrate de tener tu URL correcta
+<div id="menu">
 
-        function getDeviceId() {
-            if (typeof AndroidApp !== "undefined") return AndroidApp.getPdaId();
-            return "TEST_PC_01";
-        }
+<button onclick="window.location.href='https://www.marca.com'">
+🚚 CD Muelles
+</button>
 
-        async function inicializar() {
-            try {
-                let resp = await fetch(API + "?action=init&device=" + getDeviceId());
-                let data = await resp.json();
-                if (data.status === "ok") {
-                    document.getElementById("pdaLabel").innerText = "PDA " + data.numeroPda;
-                    document.getElementById("loginBtn").disabled = false;
-                } else {
-                    document.getElementById("pdaLabel").innerText = "No registrado";
-                    document.getElementById("error").style.display = "block";
-                    document.getElementById("error").innerText = "ID: " + getDeviceId();
-                }
-            } catch(e) { document.getElementById("pdaLabel").innerText = "Error conexión"; }
-        }
+<button onclick="abrirApp('com.google.android.apps.photos')">
+📷 Galeria
+</button>
 
-        async function login() {
-            let u = document.getElementById("usuario").value;
-            let p = document.getElementById("pin").value;
-            let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "");
-            
-            document.getElementById("error").innerText = "Iniciando sesión...";
-            document.getElementById("error").style.display = "block";
+<button onclick="abrirApp('com.whales.mobile')">📦 Whales</button>
 
-            try {
-                // Usamos la misma URL base y pasamos los parámetros de login
-                let resp = await fetch(`${API}?action=login&user=${u}&pin=${p}&pda=${pda}`);
-                let data = await resp.json();
-                
-                if (data.status === "ok") {
-                    document.getElementById("login").style.display = "none";
-                    document.getElementById("menu").style.display = "block";
-                    document.getElementById("pdaLabel").innerText = "Bienvenido";
-                } else {
-                    document.getElementById("error").innerText = data.msg;
-                }
-            } catch(e) { 
-                document.getElementById("error").innerText = "Error de servidor"; 
-            }
-        }
+<button onclick="abrirApp('com.whales.recepcion')">📥 Whales Recepción</button><button onclick="abrirApp('com.android.camera')">📷 Cámara</button>
 
-function abrirApp(pkg) {
-    // Si pasas el nombre de un paquete (ej. com.google.android.apps.photos)
-    // El intent se construye automáticamente así:
-    window.location.href = "intent:#Intent;package=" + pkg + ";end";
+<button onclick="abrirApp('com.android.settings')">
+⚙️ Ajustes
+</button>
+
+<button class="btn-logout" onclick="logout()">
+Cerrar sesión
+</button>
+
+</div>
+
+</div>
+
+
+<script>
+
+const API="https://script.google.com/macros/s/AKfycbw-9NMtSEdSSCNXREkMcGE7I8qK_oIQeGFT1RaK5e0VjTPxw4BzVZGr7EfdrO_M2_A/exec";
+
+function getDeviceId(){
+
+if(typeof AndroidApp!=="undefined")
+return AndroidApp.getPdaId();
+
+return "TEST_PC";
+
 }
 
-        function admin() { if(prompt("PIN Admin:") === "1234") window.location.href = "intent://admin"; }
-        function logout() { location.reload(); }
 
-        window.onload = inicializar;
-    </script>
+async function getCoords(){
+
+return new Promise((resolve)=>{
+
+navigator.geolocation.getCurrentPosition(
+
+p=>resolve({
+lat:p.coords.latitude,
+lng:p.coords.longitude
+}),
+
+()=>resolve({lat:0,lng:0})
+
+);
+
+});
+
+}
+
+
+/* INICIALIZAR */
+
+async function inicializar(){
+
+let resp=await fetch(API+"?action=init&device="+getDeviceId());
+let data=await resp.json();
+
+if(data.status==="ok"){
+
+document.getElementById("pdaLabel").innerText="PDA "+data.numeroPda;
+document.getElementById("loginBtn").disabled=false;
+
+}
+else{
+
+document.getElementById("pdaLabel").innerText="No registrado";
+
+}
+
+}
+
+
+/* LOGIN */
+
+async function login(){
+
+let u=document.getElementById("usuario").value;
+let p=document.getElementById("pin").value;
+let pda=document.getElementById("pdaLabel").innerText.replace("PDA ","");
+
+let coords=await getCoords();
+
+let resp=await fetch(API+
+`?action=login&user=${u}&pin=${p}&pda=${pda}&device=${getDeviceId()}&lat=${coords.lat}&lng=${coords.lng}`);
+
+let data=await resp.json();
+
+if(data.status==="ok"){
+
+document.getElementById("login").style.display="none";
+document.getElementById("menu").style.display="block";
+
+}else{
+
+document.getElementById("error").style.display="block";
+document.getElementById("error").innerText=data.msg;
+
+}
+
+}
+
+
+/* LOGOUT */
+
+async function logout(){
+
+let user=document.getElementById("usuario").value;
+let pda=document.getElementById("pdaLabel").innerText.replace("PDA ","");
+
+let coords=await getCoords();
+
+await fetch(API+
+`?action=logout&user=${user}&pda=${pda}&device=${getDeviceId()}&lat=${coords.lat}&lng=${coords.lng}`);
+
+location.reload();
+
+}
+
+
+/* ABRIR APP */
+
+function abrirApp(pkg){
+
+window.location.href="intent:#Intent;package="+pkg+";end";
+
+}
+
+
+window.onload=inicializar;
+
+</script>
+
 </body>
 </html>
