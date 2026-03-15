@@ -89,12 +89,15 @@ async function inicializar(){
     let resp = await fetch(API + "?action=init&device=" + getDeviceId());
     let data = await resp.json();
 
-    if(data.status === "ok"){
-        document.getElementById("pdaLabel").innerText = "PDA " + data.numeroPda;
-        document.getElementById("loginBtn").disabled = false;
-    } else {
-        document.getElementById("pdaLabel").innerText = "No registrado";
-    }
+if(data.status === "ok"){
+    document.getElementById("pdaLabel").innerText = "PDA " + data.numeroPda;
+    document.getElementById("loginBtn").disabled = false;
+} else {
+    let deviceId = getDeviceId();
+    document.getElementById("pdaLabel").innerText = "No registrado";
+    document.getElementById("error").style.display = "block";
+    document.getElementById("error").innerText = "ID del dispositivo: " + deviceId;
+}
 }
 
 /* LOGIN */
