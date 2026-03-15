@@ -5,122 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Sistema PDA Aza</title>
 
-<style>
-body{
-    font-family: Arial;
-    background: #f2f2f2;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+    <style>
+        body { font-family: Arial; background:#f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+        .card { background:white; padding:30px; border-radius:10px; width:300px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.2); }
+        input, button { width:100%; padding:15px; margin:10px 0; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
+        button { background:#007bff; color:white; border:none; font-size:16px; font-weight:bold; }
+        #menu, #error { display:none; margin-top:20px; }
+        .btn-admin { position:fixed; bottom:0; right:0; width:40px; height:40px; opacity:0; }
+        button:active{
+transform:scale(0.95);
+background:#0056b3;
+box-shadow:inset 0 4px 8px rgba(0,0,0,0.3);
+}
+        .logo-img {
+max-width:150px;
+height:auto;
 }
 
-.card{
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    width: 300px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.btn-logout{
+background:#dc3545 !important;
 }
 
-/* INPUTS Y BOTONES GENERALES */
-input, button {
-    width: 90%;
-    padding: 12px 0;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    text-align: center;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 16px;
+.btn-logout:active{
+background:#a71d2a !important;
 }
 
-/* BOTÓN INICIAR SESIÓN */
-#loginBtn {
-    background: #007bff; /* azul vivo */
-    color: white;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-}
 
-#loginBtn:active {
-    background: #0056b3; /* azul más oscuro al pulsar */
-    transform: scale(0.95);
-    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
-}
-
-/* BOTONES DEL MENÚ (excepto logout) */
-#menu button:not(.btn-logout) {
-    background: #007bff; /* azul vivo */
-    color: white;
-    border: none;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    text-align: center;
-    display: block;
-    width: 100%;   /* más ancho */
-    padding: 12px 0;
-    margin: 8px 0;
-    border-radius: 5px;
-}
-
-#menu button:not(.btn-logout):active {
-    background: #0056b3; /* azul más oscuro al pulsar */
-    transform: scale(0.95);
-    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
-}
-}
-
-/* BOTÓN CERRAR SESIÓN */
-button.btn-logout {
-    background: #dc3545 !important; /* rojo vivo */
-    color: white !important;
-}
-
-button.btn-logout:active {
-    background: #a71d2a !important; /* rojo más oscuro al pulsar */
-    transform: scale(0.95);
-    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
-}
-
-/* DESHABILITADOS SI LOS HAY */
-button:disabled {
-    background: #ccc;
-    color: white;
-}
-
-#error{
-    color: red;
-    margin-top: 10px;
-    display: none;
-    text-align: center;
-}
-
-#menu{
-    display: none;
-    margin-top: 15px;
-}
-
-.logo-container {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.logo-img {
-    max-width: 150px;
-    height: auto;
-}
-</style>
+    </style>
 
 </style>
 </head>
