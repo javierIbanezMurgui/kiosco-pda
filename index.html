@@ -139,6 +139,17 @@ function abrirApp(pkg){
     window.location.href = "intent:#Intent;package=" + pkg + ";end";
 }
 
+
+// Enviar logout automático si la app se cierra
+window.addEventListener("beforeunload", () => {
+    if (USUARIO_ACTUAL) {
+        let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "");
+        navigator.sendBeacon(
+            `${API}?action=logout&user=${USUARIO_ACTUAL}&pda=${pda}&device=${getDeviceId()}&lat=0&lng=0`
+        );
+    }
+});
+
 window.onload = inicializar;
 </script>
 
