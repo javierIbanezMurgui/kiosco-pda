@@ -51,11 +51,15 @@ background:#a71d2a !important;
 </div>
 
 <div id="menu">
-    <button onclick="window.location.href='https://www.marca.com'">🚚 CD Muelles</button>
-    <button onclick="abrirApp('com.google.android.apps.photos')">📷 Galeria</button>
-    <button onclick="abrirApp('com.whales.mobile')">📦 Whales</button>
+    <button onclick="window.location.href='https://192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles</button>
+    <button onclick="window.location.href='192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles 2</button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="alert('Foto capturada')">
+    <button onclick="document.getElementById('cameraInput').click()">📷 Cámara</button>
+    <input type="file" id="galeriaInput" accept="image/*" style="display: none;" onchange="alert('Imagen seleccionada')">
+    <button onclick="document.getElementById('galeriaInput').click()">🖼️ Galería</button>
+    <button onclick="abrirApp('es.tlsi.whales.androide')">📦 Whales Android</button>
     <button onclick="abrirApp('com.whales.recepcion')">📥 Whales Recepción</button>
-    <button onclick="abrirApp('com.android.camera')">📷 Cámara</button>
+    <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
     <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
     <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
 </div>
@@ -134,9 +138,13 @@ async function logout(){
     location.reload();
 }
 
-/* ABRIR APP */
-function abrirApp(pkg){
-    window.location.href = "intent:#Intent;package=" + pkg + ";end";
+function abrirApp(pkg) {
+    // Usamos el formato "intent://" con el paquete que nos has dado
+    // El 'launchFlags=0x10000000' es vital para que, si ya está abierta, la traiga al frente
+    const intentUrl = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
+    
+    // Esto fuerza a Chrome a ejecutar el comando
+    window.location.href = intentUrl;
 }
 
 
