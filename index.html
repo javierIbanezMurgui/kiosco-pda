@@ -5,161 +5,256 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Sistema PDA Aza</title>
 
-    <style>
-        body { font-family: Arial; background:#f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-        .card { background:white; padding:30px; border-radius:10px; width:300px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.2); }
-        input, button { width:100%; padding:15px; margin:10px 0; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
-        button { background:#007bff; color:white; border:none; font-size:16px; font-weight:bold; }
-        #menu, #error { display:none; margin-top:20px; }
-        .btn-admin { position:fixed; bottom:0; right:0; width:40px; height:40px; opacity:0; }
-        button:active{
-transform:scale(0.95);
-background:#0056b3;
-box-shadow:inset 0 4px 8px rgba(0,0,0,0.3);
-}
-        .logo-img {
-max-width:150px;
-height:auto;
-}
-
-.btn-logout{
-background:#dc3545 !important;
-}
-
-.btn-logout:active{
-background:#a71d2a !important;
-}
-
-
-    </style>
-
+<style>
+    body { 
+        font-family: Arial; 
+        background: #f2f2f2; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        margin: 0; 
+    }
+    .card { 
+        background: white; 
+        padding: 30px; 
+        border-radius: 10px; 
+        width: 90%; 
+        max-width: 350px; 
+        text-align: center; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+    }
+    input, button { 
+        width: 100%; 
+        padding: 15px; 
+        margin: 10px 0; 
+        border-radius: 5px; 
+        border: 1px solid #ccc; 
+        box-sizing: border-box; 
+        font-size: 16px;
+    }
+    button { 
+        background: #007bff; 
+        color: white; 
+        border: none; 
+        font-size: 16px; 
+        font-weight: bold; 
+        cursor: pointer;
+    }
+    button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    #menu, #error { 
+        display: none; 
+        margin-top: 20px; 
+    }
+    #error {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .logo-img {
+        max-width: 150px;
+        height: auto;
+        margin-bottom: 20px;
+    }
+    .btn-logout {
+        background: #dc3545 !important;
+    }
+    button:active {
+        transform: scale(0.95);
+    }
+    .btn-logout:active {
+        background: #a71d2a !important;
+    }
+    .btn-secondary {
+        background: #6c757d !important;
+    }
+    .btn-secondary:active {
+        background: #545b62 !important;
+    }
 </style>
 </head>
 <body>
 
 <div class="card">
+    <img src="aza-logistics.png" class="logo-img" alt="Aza Logistics" onerror="this.style.display='none'">
+    
+    <h2 id="pdaLabel">Cargando...</h2>
 
-<img src="aza-logistics.png" class="logo-img">
+    <div id="login">
+        <input id="usuario" placeholder="Usuario" autocomplete="username">
+        <input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
+        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
+        <div id="error"></div>
+    </div>
 
-<h2 id="pdaLabel">Cargando...</h2>
-
-<div id="login">
-    <input id="usuario" placeholder="Usuario">
-    <input id="pin" placeholder="PIN" type="password">
-    <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
-    <div id="error"></div>
-</div>
-
-<div id="menu">
-    <button onclick="window.location.href='https://192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles</button>
-    <button onclick="window.location.href='192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles 2</button>
-
-    <input type="file" id="galeriaInput" accept="image/*" style="display: none;" onchange="alert('Imagen seleccionada')">
-    <button onclick="document.getElementById('galeriaInput').click()">🖼️ Galería</button>
-<button onclick="AndroidApp.abrirApp('es.tlsi.whales.androide')">📦 Whales</button>
-
-<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
-<button onclick="document.getElementById('cameraInput').click()">📷 Cámara</button>
-    <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
-    <button onclick="alert('¿AndroidApp existe?: ' + (typeof AndroidApp !== 'undefined')); AndroidApp.abrirApp('es.tlsi.whales.androide')">
-    📦 Probar Whales
-</button>
-    <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
-    <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
-    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
-</div>
-
+    <div id="menu">
+        <button onclick="window.location.href='http://192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles</button>
+        
+        <input type="file" id="galeriaInput" accept="image/*" style="display: none;" onchange="handleImageCapture(this)">
+        <button onclick="document.getElementById('galeriaInput').click()" class="btn-secondary">🖼️ Galería</button>
+        
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageCapture(this)">
+        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara</button>
+        
+        <button onclick="AndroidApp?.abrirApp('es.tlsi.whales.androide')">📦 Whales</button>
+        <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
+        <button onclick="abrirApp('com.android.settings')" class="btn-secondary">⚙️ Ajustes</button>
+        <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
 </div>
 
 <script>
 // URL de tu Apps Script
-const API = "https://script.google.com/macros/s/AKfycbxkzy0fGox2cqRJpZZ2x_B0U00YwhpD6r_OifFHgMb3iA0-zYTWUIUL4ehPM08CYNid/exec";
+const API = "https://script.google.com/macros/s/AKfycbxYlo2EYe8xC-rzEWjEBEFOJTMKx07eok0j_DfHpL1o58Q4H-y74lPZEa-A_V0nbSjv/exec";
 
 // Variable global para guardar el usuario que hizo login
 let USUARIO_ACTUAL = null;
 
 function getDeviceId(){
-    if(typeof AndroidApp !== "undefined") return AndroidApp.getPdaId();
+    if(typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
+        try {
+            return AndroidApp.getPdaId();
+        } catch(e) {
+            return "WEB_ERROR";
+        }
+    }
     return "TEST_PC";
 }
 
-// Obtener lat/lng
+// Obtener lat/lng con timeout
 async function getCoords(){
-    return new Promise((resolve)=>{
+    return new Promise((resolve) => {
         navigator.geolocation.getCurrentPosition(
-            p => resolve({lat:p.coords.latitude, lng:p.coords.longitude}),
-            () => resolve({lat:0,lng:0})
+            p => resolve({lat: p.coords.latitude, lng: p.coords.longitude}),
+            () => resolve({lat: 0, lng: 0}),
+            { timeout: 5000, enableHighAccuracy: true }
         );
     });
 }
 
+// Manejo de imágenes
+function handleImageCapture(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            console.log('Imagen capturada:', file.name, file.size);
+            // TODO: Subir imagen al servidor
+            alert('Imagen lista: ' + file.name);
+            // uploadImage(file);
+        };
+        reader.readAsDataURL(file);
+        input.value = ''; // Reset para poder seleccionar misma imagen
+    }
+}
+
 /* INICIALIZAR */
 async function inicializar(){
-    let resp = await fetch(API + "?action=init&device=" + getDeviceId());
-    let data = await resp.json();
+    try {
+        let resp = await fetch(API + "?action=init&device=" + encodeURIComponent(getDeviceId()));
+        let data = await resp.json();
 
-if(data.status === "ok"){
-    document.getElementById("pdaLabel").innerText = "PDA " + data.numeroPda;
-    document.getElementById("loginBtn").disabled = false;
-} else {
-    let deviceId = getDeviceId();
-    document.getElementById("pdaLabel").innerText = "No registrado";
-    document.getElementById("error").style.display = "block";
-    document.getElementById("error").innerText = "ID del dispositivo: " + deviceId;
-}
+        if(data.status === "ok"){
+            document.getElementById("pdaLabel").innerText = "PDA " + data.numeroPda;
+            document.getElementById("loginBtn").disabled = false;
+        } else {
+            let deviceId = getDeviceId();
+            document.getElementById("pdaLabel").innerText = "No registrado";
+            document.getElementById("error").style.display = "block";
+            document.getElementById("error").innerText = "ID: " + deviceId + "\nContacta administrador";
+        }
+    } catch(e) {
+        document.getElementById("pdaLabel").innerText = "Error conexión";
+        document.getElementById("error").style.display = "block";
+        document.getElementById("error").innerText = "Sin internet";
+    }
 }
 
 /* LOGIN */
 async function login(){
-    let u = document.getElementById("usuario").value;
+    let u = document.getElementById("usuario").value.trim();
     let p = document.getElementById("pin").value;
-    let pda = document.getElementById("pdaLabel").innerText.replace("PDA ","");
-    let coords = await getCoords();
-
-    let resp = await fetch(API +
-        `?action=login&user=${u}&pin=${p}&pda=${pda}&device=${getDeviceId()}&lat=${coords.lat}&lng=${coords.lng}`);
-    let data = await resp.json();
-
-    if(data.status === "ok"){
-        USUARIO_ACTUAL = u; // Guardamos usuario actual
-        document.getElementById("login").style.display = "none";
-        document.getElementById("menu").style.display = "block";
-    } else {
-        document.getElementById("error").style.display = "block";
-        document.getElementById("error").innerText = data.msg;
+    let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "").trim();
+    
+    if(!u || !p || !pda) {
+        showError("Complete todos los campos");
+        return;
     }
+
+    showError(""); // Limpiar errores
+    document.getElementById("loginBtn").disabled = true;
+    
+    try {
+        let coords = await getCoords();
+        let resp = await fetch(API + 
+            `?action=login&user=${encodeURIComponent(u)}&pin=${encodeURIComponent(p)}&pda=${encodeURIComponent(pda)}&device=${encodeURIComponent(getDeviceId())}&lat=${coords.lat}&lng=${coords.lng}`);
+        let data = await resp.json();
+
+        if(data.status === "ok"){
+            USUARIO_ACTUAL = u;
+            document.getElementById("login").style.display = "none";
+            document.getElementById("menu").style.display = "block";
+        } else {
+            showError(data.msg || "Error desconocido");
+        }
+    } catch(e) {
+        showError("Error de conexión");
+    } finally {
+        document.getElementById("loginBtn").disabled = false;
+    }
+}
+
+function showError(msg) {
+    let errorDiv = document.getElementById("error");
+    errorDiv.innerText = msg;
+    errorDiv.style.display = msg ? "block" : "none";
 }
 
 /* LOGOUT */
 async function logout(){
     if(!USUARIO_ACTUAL) return;
-    let pda = document.getElementById("pdaLabel").innerText.replace("PDA ","");
+    
+    let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "").trim();
     let coords = await getCoords();
 
-    await fetch(API +
-        `?action=logout&user=${USUARIO_ACTUAL}&pda=${pda}&device=${getDeviceId()}&lat=${coords.lat}&lng=${coords.lng}`);
+    try {
+        await fetch(API +
+            `?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(pda)}&device=${encodeURIComponent(getDeviceId())}&lat=${coords.lat}&lng=${coords.lng}`);
+    } catch(e) {
+        console.log("Logout falló, pero se recarga igual");
+    }
 
-    USUARIO_ACTUAL = null; // Limpiar
+    USUARIO_ACTUAL = null;
     location.reload();
 }
 
 function abrirApp(pkg) {
-    // Usamos el formato "intent://" con el paquete que nos has dado
-    // El 'launchFlags=0x10000000' es vital para que, si ya está abierta, la traiga al frente
-    const intentUrl = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
-    
-    // Esto fuerza a Chrome a ejecutar el comando
-    window.location.href = intentUrl;
+    if(typeof AndroidApp !== "undefined" && AndroidApp.abrirApp) {
+        try {
+            AndroidApp.abrirApp(pkg);
+        } catch(e) {
+            window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
+        }
+    } else {
+        window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
+    }
 }
 
-
-// Enviar logout automático si la app se cierra
-window.addEventListener("beforeunload", () => {
+// Logout automático si la app se cierra
+window.addEventListener("beforeunload", async () => {
     if (USUARIO_ACTUAL) {
-        let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "");
-        navigator.sendBeacon(
-            `${API}?action=logout&user=${USUARIO_ACTUAL}&pda=${pda}&device=${getDeviceId()}&lat=0&lng=0`
-        );
+        let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "").trim();
+        const url = `${API}?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(pda)}&device=${encodeURIComponent(getDeviceId())}&lat=0&lng=0`;
+        navigator.sendBeacon(url);
+    }
+});
+
+// Enter en inputs
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && document.getElementById('login').style.display !== 'none') {
+        login();
     }
 });
 
