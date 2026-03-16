@@ -61,6 +61,9 @@ background:#a71d2a !important;
 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
 <button onclick="document.getElementById('cameraInput').click()">📷 Cámara</button>
     <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
+    <button onclick="alert('¿AndroidApp existe?: ' + (typeof AndroidApp !== 'undefined')); AndroidApp.abrirApp('es.tlsi.whales.androide')">
+    📦 Probar Whales
+</button>
     <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
     <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
 </div>
