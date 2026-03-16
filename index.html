@@ -53,12 +53,13 @@ background:#a71d2a !important;
 <div id="menu">
     <button onclick="window.location.href='https://192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles</button>
     <button onclick="window.location.href='192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles 2</button>
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="alert('Foto capturada')">
-    <button onclick="document.getElementById('cameraInput').click()">📷 Cámara</button>
+
     <input type="file" id="galeriaInput" accept="image/*" style="display: none;" onchange="alert('Imagen seleccionada')">
     <button onclick="document.getElementById('galeriaInput').click()">🖼️ Galería</button>
-    <button onclick="abrirApp('es.tlsi.whales.androide')">📦 Whales Android</button>
-    <button onclick="abrirApp('com.whales.recepcion')">📥 Whales Recepción</button>
+<button onclick="AndroidApp.abrirApp('es.tlsi.whales.androide')">📦 Whales</button>
+
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+<button onclick="document.getElementById('cameraInput').click()">📷 Cámara</button>
     <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
     <button onclick="abrirApp('com.android.settings')">⚙️ Ajustes</button>
     <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
