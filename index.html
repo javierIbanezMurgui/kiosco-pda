@@ -52,6 +52,7 @@
     #error {
         color: #dc3545;
         font-weight: bold;
+        white-space: pre-line;
     }
     .logo-img {
         max-width: 150px;
@@ -98,7 +99,7 @@
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageCapture(this)">
         <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara</button>
         
-        <button onclick="AndroidApp?.abrirApp('es.tlsi.whales.androide')">📦 Whales</button>
+        <button onclick="AndroidApp && AndroidApp.abrirApp && AndroidApp.abrirApp('es.tlsi.whales.androide')">📦 Whales</button>
         <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
         <button onclick="abrirApp('com.android.settings')" class="btn-secondary">⚙️ Ajustes</button>
         <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
@@ -107,13 +108,14 @@
 
 <script>
 // URL de tu Apps Script
-const API = "https://script.google.com/macros/s/AKfycbxYlo2EYe8xC-rzEWjEBEFOJTMKx07eok0j_DfHpL1o58Q4H-y74lPZEa-A_V0nbSjv/exec";
+const API = "https://script.google.com/macros/s/AKfycbxk-pTpvAbRjYkCSYmnDjKwqzWvVkVRb6k4zKW_LE-cZSYON2TuNB_jeys0nFsSco1T/exec";
 
-// Variable global para guardar el usuario que hizo login
+// Variables globales
 let USUARIO_ACTUAL = null;
+let PDA_NUMERO = null;
 
 function getDeviceId(){
-    if(typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
+    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
         try {
             return AndroidApp.getPdaId();
         } catch(e) {
@@ -126,6 +128,10 @@ function getDeviceId(){
 // Obtener lat/lng con timeout
 async function getCoords(){
     return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            resolve({lat: 0, lng: 0});
+            return;
+        }
         navigator.geolocation.getCurrentPosition(
             p => resolve({lat: p.coords.latitude, lng: p.coords.longitude}),
             () => resolve({lat: 0, lng: 0}),
@@ -134,19 +140,18 @@ async function getCoords(){
     });
 }
 
-// Manejo de imágenes
+// Manejo de imágenes (de momento solo log/alert)
 function handleImageCapture(input) {
     const file = input.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
             console.log('Imagen capturada:', file.name, file.size);
-            // TODO: Subir imagen al servidor
             alert('Imagen lista: ' + file.name);
-            // uploadImage(file);
+            // Aquí podrías llamar a un endpoint para subir la imagen
         };
         reader.readAsDataURL(file);
-        input.value = ''; // Reset para poder seleccionar misma imagen
+        input.value = '';
     }
 }
 
@@ -156,48 +161,64 @@ async function inicializar(){
         let resp = await fetch(API + "?action=init&device=" + encodeURIComponent(getDeviceId()));
         let data = await resp.json();
 
-        if(data.status === "ok"){
-            document.getElementById("pdaLabel").innerText = "PDA " + data.numeroPda;
+        if (data.status === "ok") {
+            PDA_NUMERO = data.numeroPda;
+            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
             document.getElementById("loginBtn").disabled = false;
         } else {
             let deviceId = getDeviceId();
             document.getElementById("pdaLabel").innerText = "No registrado";
-            document.getElementById("error").style.display = "block";
-            document.getElementById("error").innerText = "ID: " + deviceId + "\nContacta administrador";
+            showError("ID: " + deviceId + "\nContacta administrador");
         }
     } catch(e) {
         document.getElementById("pdaLabel").innerText = "Error conexión";
-        document.getElementById("error").style.display = "block";
-        document.getElementById("error").innerText = "Sin internet";
+        showError("Sin internet");
     }
 }
 
-/* LOGIN */
+/* LOGIN (ahora por POST, no por GET) */
 async function login(){
     let u = document.getElementById("usuario").value.trim();
     let p = document.getElementById("pin").value;
-    let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "").trim();
     
-    if(!u || !p || !pda) {
+    if (!u || !p || !PDA_NUMERO) {
         showError("Complete todos los campos");
         return;
     }
 
-    showError(""); // Limpiar errores
+    showError("");
     document.getElementById("loginBtn").disabled = true;
     
     try {
         let coords = await getCoords();
-        let resp = await fetch(API + 
-            `?action=login&user=${encodeURIComponent(u)}&pin=${encodeURIComponent(p)}&pda=${encodeURIComponent(pda)}&device=${encodeURIComponent(getDeviceId())}&lat=${coords.lat}&lng=${coords.lng}`);
+        const body = new URLSearchParams({
+            action: "login",
+            user: u,
+            pin: p,
+            pda: PDA_NUMERO,
+            device: getDeviceId(),
+            lat: coords.lat,
+            lng: coords.lng
+        });
+
+        let resp = await fetch(API, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+            },
+            body: body.toString()
+        });
+
         let data = await resp.json();
 
-        if(data.status === "ok"){
+        if (data.status === "ok") {
             USUARIO_ACTUAL = u;
             document.getElementById("login").style.display = "none";
             document.getElementById("menu").style.display = "block";
+            document.getElementById("pin").value = "";
         } else {
             showError(data.msg || "Error desconocido");
+            document.getElementById("pin").value = "";
         }
     } catch(e) {
         showError("Error de conexión");
@@ -214,14 +235,16 @@ function showError(msg) {
 
 /* LOGOUT */
 async function logout(){
-    if(!USUARIO_ACTUAL) return;
+    if (!USUARIO_ACTUAL || !PDA_NUMERO) {
+        location.reload();
+        return;
+    }
     
-    let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "").trim();
     let coords = await getCoords();
 
     try {
-        await fetch(API +
-            `?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(pda)}&device=${encodeURIComponent(getDeviceId())}&lat=${coords.lat}&lng=${coords.lng}`);
+        await fetch(API + 
+            `?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(PDA_NUMERO)}&device=${encodeURIComponent(getDeviceId())}&lat=${coords.lat}&lng=${coords.lng}`);
     } catch(e) {
         console.log("Logout falló, pero se recarga igual");
     }
@@ -231,22 +254,21 @@ async function logout(){
 }
 
 function abrirApp(pkg) {
-    if(typeof AndroidApp !== "undefined" && AndroidApp.abrirApp) {
+    if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp) {
         try {
             AndroidApp.abrirApp(pkg);
+            return;
         } catch(e) {
-            window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
+            // fallback abajo
         }
-    } else {
-        window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
     }
+    window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
 }
 
 // Logout automático si la app se cierra
-window.addEventListener("beforeunload", async () => {
-    if (USUARIO_ACTUAL) {
-        let pda = document.getElementById("pdaLabel").innerText.replace("PDA ", "").trim();
-        const url = `${API}?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(pda)}&device=${encodeURIComponent(getDeviceId())}&lat=0&lng=0`;
+window.addEventListener("beforeunload", () => {
+    if (USUARIO_ACTUAL && PDA_NUMERO) {
+        const url = `${API}?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(PDA_NUMERO)}&device=${encodeURIComponent(getDeviceId())}&lat=0&lng=0`;
         navigator.sendBeacon(url);
     }
 });
