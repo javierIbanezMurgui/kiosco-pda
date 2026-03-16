@@ -91,7 +91,10 @@
     </div>
 
     <div id="menu">
-        <button onclick="window.location.href='http://192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles</button>
+        <button onclick="window.location.href='https://192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles</button>
+
+        <button onclick="window.location.href='192.168.2.20/Planificador/cdmuelles/cargadescarga.php'">🚚 CD Muelles 2</button>
+
         
         <input type="file" id="galeriaInput" accept="image/*" style="display: none;" onchange="handleImageCapture(this)">
         <button onclick="document.getElementById('galeriaInput').click()" class="btn-secondary">🖼️ Galería</button>
@@ -100,6 +103,7 @@
         <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara</button>
         
         <button onclick="AndroidApp && AndroidApp.abrirApp && AndroidApp.abrirApp('es.tlsi.whales.androide')">📦 Whales</button>
+        <button onclick="AndroidApp.abrirApp('es.tlsi.whales.androide')">📦 Whales</button>
         <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
         <button onclick="abrirApp('com.android.settings')" class="btn-secondary">⚙️ Ajustes</button>
         <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
