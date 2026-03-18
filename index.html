@@ -87,11 +87,13 @@
         <input id="usuario" placeholder="Usuario" autocomplete="username">
         <input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
         <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
-        <div id="error"></div>
-        <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
-    Iniciando sesión...
-</div>
 
+        <div id="error"></div>
+
+        <!-- 🔵 MENSAJE NUEVO DE CARGA -->
+        <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
+            Iniciando sesión...
+        </div>
     </div>
 
     <div id="menu">
@@ -116,7 +118,7 @@
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbyd2jqwhXbMkD4ri03FstqUEm7rKawL-lPAa5K_kKnX1HEHuSSaYgGw7XuVbveAGju3/exec";
+const API = "https://script.google.com/macros/s/AKfycbxqaudvqV0ryz_r66O2Cl6Ma8FUqJFkEgYtDIcADWLVU_i4g_tPJ-RbAD_gFqn5W5qY/exec";
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
@@ -179,6 +181,10 @@ async function login(){
     }
 
     showError("");
+
+    // 🔵 MOSTRAR MENSAJE DE CARGA
+    document.getElementById("loading").style.display = "block";
+
     loginBtn.disabled = true;
 
     try {
@@ -214,6 +220,9 @@ async function login(){
         showError("Error de conexión");
     } finally {
         loginBtn.disabled = false;
+
+        // 🔵 OCULTAR MENSAJE DE CARGA
+        document.getElementById("loading").style.display = "none";
     }
 }
 
