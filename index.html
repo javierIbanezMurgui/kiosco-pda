@@ -209,8 +209,9 @@ async function login(){
 
         if (data.status === "ok"){
             USUARIO_ACTUAL = u;
-            login.style.display = "none";
-            menu.style.display = "block";
+document.getElementById("login").style.display = "none";
+document.getElementById("menu").style.display = "block";
+
             pin.value = "";
         } else {
             showError(data.msg || "Error desconocido");
