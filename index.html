@@ -279,7 +279,7 @@ document.addEventListener("click", () => ultimoMovimiento = Date.now());
 
 setInterval(async () => {
     if (USUARIO_ACTUAL && PDA_NUMERO){
-        if (Date.now() - ultimoMovimiento > 10 * 60 * 1000){
+        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
             await logout();
         }
     }
