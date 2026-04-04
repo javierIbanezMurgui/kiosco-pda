@@ -114,7 +114,7 @@
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbxBsr6q-puDVvWGzPjRvQdeFkpfVYaPDYJoLjRA9oRfDkg7twNrPa5MAoOHpXjO4znE/exec";
+const API = "https://script.google.com/macros/s/AKfycbwRLgCSNMukaU3a_lETpEbEoy9X1Y_jisIfxs0LgkmIKI7Gr1WDi_xKggwbCcP3ISRB/exec";
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
@@ -273,13 +273,11 @@ setInterval(() => {
     }
 }, 60000);
 
-/* ------------------------------
-   IDLE TIMEOUT (7 minutos)
---------------------------------*/
+// IDLE TIMEOUT (7 minutos) con teclado, touch, click y mouse
 let ultimoMovimiento = Date.now();
-
-document.addEventListener("touchstart", () => ultimoMovimiento = Date.now());
-document.addEventListener("click", () => ultimoMovimiento = Date.now());
+["touchstart","click","keydown","mousemove"].forEach(ev => 
+    document.addEventListener(ev, () => ultimoMovimiento = Date.now())
+);
 
 setInterval(async () => {
     if (USUARIO_ACTUAL && PDA_NUMERO){
