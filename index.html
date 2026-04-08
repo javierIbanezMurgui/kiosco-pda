@@ -65,8 +65,14 @@
     button:active {
         transform: scale(0.95);
     }
+    .btn-logout:active {
+        background: #a71d2a !important;
+    }
     .btn-secondary {
         background: #6c757d !important;
+    }
+    .btn-secondary:active {
+        background: #545b62 !important;
     }
 </style>
 </head>
@@ -76,9 +82,6 @@
     <img src="aza-logistics.png" class="logo-img" alt="Aza Logistics" onerror="this.style.display='none'">
 
     <h2 id="pdaLabel">Cargando...</h2>
-
-    <!-- NUEVO: Número de serie -->
-    <p id="numeroDeSerie" style="font-size:14px; color:#555; margin-top:-10px;"></p>
 
     <div id="login">
         <input id="usuario" placeholder="Usuario" autocomplete="username">
@@ -98,11 +101,18 @@
 
         <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
         <button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
-        <button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+
+
+<button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+
         <button onclick="AndroidApp.abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
+
+        <button
+
+
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(this)">
-        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galería</button>
+        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galeria</button>
 
         <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
 
@@ -120,14 +130,6 @@ function getDeviceId(){
     if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
         try { return AndroidApp.getPdaId(); }
         catch(e) { return "WEB_ERROR"; }
-    }
-    return "TEST_PC";
-}
-
-function getDeviceSerial(){
-    if (typeof AndroidApp !== "undefined" && AndroidApp.getDeviceSerial) {
-        try { return AndroidApp.getDeviceSerial(); }
-        catch(e) { return "NO_SERIAL"; }
     }
     return "TEST_PC";
 }
@@ -157,10 +159,6 @@ async function inicializar(){
     try {
         let resp = await fetch(API + "?action=init&device=" + encodeURIComponent(getDeviceId()));
         let data = await resp.json();
-
-        // Mostrar número de serie real
-        document.getElementById("numeroDeSerie").innerText =
-            "Número de serie: " + getDeviceSerial();
 
         if (data.status === "ok") {
             PDA_NUMERO = data.numeroPda;
@@ -250,8 +248,57 @@ async function logout(){
     location.reload();
 }
 
+function abrirApp(pkg){
+    if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
+        try { AndroidApp.abrirApp(pkg); return; }
+        catch(e){}
+    }
+    window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
+}
+
+window.addEventListener("beforeunload", () => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        navigator.sendBeacon(API + `?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(PDA_NUMERO)}&device=${encodeURIComponent(getDeviceId())}&lat=0&lng=0`);
+    }
+});
+
 window.onload = inicializar;
+
+/* ------------------------------
+   HEARTBEAT CADA 30 SEGUNDOS
+--------------------------------*/
+setInterval(() => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        fetch(
+          API 
+          + `?action=heartbeat`
+          + `&user=${encodeURIComponent(USUARIO_ACTUAL)}`
+          + `&pda=${encodeURIComponent(PDA_NUMERO)}`
+          + `&device=${encodeURIComponent(getDeviceId())}`
+          + `&ts=${Date.now()}`
+        );
+    }
+}, 60000);
+
+// IDLE TIMEOUT (7 minutos) con teclado, touch, click y mouse
+let ultimoMovimiento = Date.now();
+["touchstart","click","keydown","mousemove"].forEach(ev => 
+    document.addEventListener(ev, () => ultimoMovimiento = Date.now())
+);
+
+setInterval(async () => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
+            await logout();
+        }
+    }
+}, 60000);
 </script>
+
+<div id="adminEscape"
+     style="position:fixed; bottom:0; right:0; width:60px; height:60px; opacity:0;"
+     onclick="AndroidApp.solicitarPinAdmin()">
+</div>
 
 </body>
 </html>
