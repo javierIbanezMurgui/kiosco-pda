@@ -55,15 +55,17 @@ button:disabled { background: #ccc; }
 
 </head>
 
-
 <body>
+
+<!-- BOTÓN PARA VER EL ID DE LA PDA (CORRECTAMENTE COLOCADO) -->
+<button onclick="alert(getDeviceId())"
+        style="position:fixed; top:10px; right:10px; background:#28a745; color:white; z-index:9999;">
+    Ver ID
+</button>
 
 <div class="card">
 
 <h2 id="pdaLabel">Cargando...</h2>
-
-
-
 
 <div id="login">
     <input id="usuario" placeholder="Usuario">
@@ -136,9 +138,9 @@ async function inicializar(){
         let data = await resp.json();
 
         let pda = data.find(d => {
-    return (
-        (d.device && d.device === device) ||
-        (d.imei && d.imei === device) ||
-        (d.serial && d.serial === device)
-    );
-});
+            return (
+                (d.device && d.device === device) ||
+                (d.imei && d.imei === device) ||
+                (d.serial && d.serial === device)
+            );
+        });
