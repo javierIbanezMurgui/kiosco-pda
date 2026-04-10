@@ -131,7 +131,10 @@ async function inicializar(){
         let resp = await fetch(`${API}/pdas/`);
         let data = await resp.json();
 
-        let pda = data.find(d =>
-            String(d.device) === String(device) ||
-            String(d.imei) === String(device) ||
-            String
+        let pda = data.find(d => {
+    return (
+        (d.device && d.device === device) ||
+        (d.imei && d.imei === device) ||
+        (d.serial && d.serial === device)
+    );
+});
