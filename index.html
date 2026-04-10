@@ -26,6 +26,12 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
 }
 
+.logo-img {
+    max-width: 150px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
 input, button { 
     width: 100%; 
     padding: 15px; 
@@ -57,7 +63,7 @@ button:disabled { background: #ccc; }
 
 <body>
 
-<!-- BOTÓN PARA VER EL ID DE LA PDA (CORRECTAMENTE COLOCADO) -->
+<!-- BOTÓN PARA VER EL ID REAL DE LA PDA -->
 <button onclick="alert(getDeviceId())"
         style="position:fixed; top:10px; right:10px; background:#28a745; color:white; z-index:9999;">
     Ver ID
@@ -134,13 +140,181 @@ async function inicializar(){
     try{
         const device = getDeviceId();
 
-        let resp = await fetch(`${API}/pdas/`);
+        let resp = await fetch(API + "/pdas/");
         let data = await resp.json();
 
-        let pda = data.find(d => {
-            return (
-                (d.device && d.device === device) ||
-                (d.imei && d.imei === device) ||
-                (d.serial && d.serial === device)
-            );
+        let pda = data.find(d => String(d.device) === String(device));
+
+        if (pda){
+            PDA_NUMERO = pda.numPDA;
+            pdaLabel.innerText = "PDA " + PDA_NUMERO;
+            loginBtn.disabled = false;
+        }else{
+            pdaLabel.innerText = "No registrado";
+            showError("ID: " + device + "\nContacta con soporte");
+        }
+    }catch(e){
+        pdaLabel.innerText = "Error conexión";
+        showError("Sin conexión al servidor");
+    }
+}
+
+/* ================= LOGIN ================= */
+async function login(){
+
+    let u = usuario.value.trim();
+    let p = pin.value;
+
+    if (!u || !p || !PDA_NUMERO){
+        showError("Complete todos los campos");
+        return;
+    }
+
+    showError("");
+    loading.style.display = "block";
+    loginBtn.disabled = true;
+
+    try{
+
+        let resp = await fetch(API + "/usuarios/");
+        let users = await resp.json();
+
+        let user = users.find(x => x.usuario === u && x.pin === p);
+
+        if (!user){
+            showError("Usuario o PIN incorrecto");
+            pin.value = "";
+            return;
+        }
+
+        if (String(user.numPDA) !== String(PDA_NUMERO)){
+            showError("Esta no es tu PDA");
+            return;
+        }
+
+        let coords = await getCoords();
+
+        await fetch(API + "/asignaciones/", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: u,
+                pda: PDA_NUMERO,
+                device: getDeviceId(),
+                estado: "LOGIN",
+                fecha: new Date().toISOString()
+            })
         });
+
+        await fetch(API + "/logs/login", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: u,
+                pda: PDA_NUMERO,
+                device: getDeviceId(),
+                lat: coords.lat,
+                lng: coords.lng
+            })
+        });
+
+        USUARIO_ACTUAL = u;
+
+        login.style.display = "none";
+        menu.style.display = "block";
+        pin.value = "";
+
+    }catch(e){
+        showError("Error de conexión");
+    }finally{
+        loginBtn.disabled = false;
+        loading.style.display = "none";
+    }
+}
+
+/* ================= LOGOUT ================= */
+async function logout(){
+
+    if (!USUARIO_ACTUAL) return;
+
+    let coords = await getCoords();
+
+    try{
+        await fetch(API + "/logs/logout", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: USUARIO_ACTUAL,
+                pda: PDA_NUMERO,
+                device: getDeviceId(),
+                lat: coords.lat,
+                lng: coords.lng
+            })
+        });
+    }catch(e){}
+
+    USUARIO_ACTUAL = null;
+    location.reload();
+}
+
+/* ================= HEARTBEAT ================= */
+setInterval(()=>{
+    if (USUARIO_ACTUAL){
+        fetch(API + "/logs/heartbeat", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: USUARIO_ACTUAL,
+                pda: PDA_NUMERO,
+                device: getDeviceId()
+            })
+        });
+    }
+},120000);
+
+/* ================= IDLE LOGOUT ================= */
+let ultimoMovimiento = Date.now();
+["touchstart","click","keydown","mousemove"].forEach(ev =>
+    document.addEventListener(ev, ()=> ultimoMovimiento = Date.now())
+);
+
+setInterval(async ()=>{
+    if (USUARIO_ACTUAL && Date.now() - ultimoMovimiento > 7*60*1000){
+        await logout();
+    }
+},60000);
+
+/* ================= APP LAUNCH ================= */
+function abrirApp(pkg){
+    if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
+        try { AndroidApp.abrirApp(pkg); return; } catch(e){}
+    }
+    window.location.href = `intent:#Intent;package=${pkg};end`;
+}
+
+/* ================= CAMERA ================= */
+function handleImageCapture(input){
+    const file = input.files[0];
+    if (file){
+        alert("Imagen lista: " + file.name);
+        input.value = "";
+    }
+}
+
+/* ================= ERROR ================= */
+function showError(msg){
+    error.innerText = msg;
+    error.style.display = msg ? "block" : "none";
+}
+
+window.onload = inicializar;
+
+</script>
+
+<div id="adminEscape"
+     style="position:fixed; bottom:0; right:0; width:60px; height:60px; opacity:0;"
+     onclick="AndroidApp.solicitarPinAdmin()">
+</div>
+
+</body>
+</html>
