@@ -3,48 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>PDA DEBUG AZA</title>
+<title>PDA DIAGNÓSTICO</title>
 
 <style>
 body {
     font-family: Arial;
     background: #f2f2f2;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
 }
 
 .card {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 350px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    width:90%;
+    max-width:400px;
 }
 
 button {
-    width: 100%;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 16px;
-    font-weight: bold;
-    background: #007bff;
-    color: white;
+    width:100%;
+    padding:15px;
+    margin:10px 0;
+    font-weight:bold;
 }
-
-#menu { display:none; }
 
 #error {
-    color:red;
     white-space:pre-line;
+    color:red;
     margin-top:10px;
 }
+.ok { color: green; }
+.warn { color: orange; }
+.bad { color: red; }
 </style>
 </head>
 
@@ -52,25 +46,12 @@ button {
 
 <div class="card">
 
-<h2 id="pdaLabel">DEBUG MODE</h2>
+<h2>DIAGNÓSTICO API</h2>
 
-<div id="login" style="display:none;">
-    <p>Modo debug activo</p>
-</div>
+<button onclick="runDiagnostics()">🔍 PROBAR CONEXIÓN COMPLETA</button>
 
-<div id="menu">
-
-    <button onclick="testAPI()">🔍 TEST API</button>
-
-    <button onclick="abrirApp('es.tlsi.whales.android')">Whales</button>
-    <button onclick="abrirApp('com.datalogic.scan2deploy')">Scan2Deploy</button>
-    <button onclick="abrirApp('com.azalogistics.aza_scanner')">Scanner</button>
-    <button onclick="abrirApp('es.tlsi.mobile')">Whales nuevo</button>
-
-    <button onclick="logout()">Cerrar sesión</button>
-
-    <div id="error"></div>
-</div>
+<div id="status"></div>
+<div id="error"></div>
 
 </div>
 
@@ -78,80 +59,82 @@ button {
 
 const API = "http://192.168.2.33:8000";
 
-let USUARIO_ACTUAL = "DEBUG";
+/* 🔥 DIAGNÓSTICO COMPLETO */
+async function runDiagnostics(){
 
-/* INIT */
-async function inicializar(){
-    console.log("Iniciando debug...");
+    setStatus("Iniciando diagnóstico...");
 
+    // 1. TEST RED / FETCH BASE
     try {
+        setStatus("1/4 Conectando al servidor...");
 
-        // 🔥 HEALTH FIX (GET EXPLÍCITO)
-        let resp = await fetch(API + "/health", {
-            method: "GET"
-        });
+        let r = await fetch(API + "/health");
 
-        let text = await resp.text();
+        let text = await r.text();
 
-        console.log("HEALTH:", text);
-
-        document.getElementById("menu").style.display = "block";
+        setStatus("✔ Servidor responde");
 
     } catch(e){
-        console.error("ERROR HEALTH:", e);
-        showError("Sin conexión con API\n" + e.message);
-        document.getElementById("menu").style.display = "block";
+        showError("❌ NO HAY CONEXIÓN AL SERVIDOR\n\n" + 
+                  "POSIBLES CAUSAS:\n" +
+                  "- IP incorrecta\n" +
+                  "- puerto cerrado\n" +
+                  "- firewall bloqueando\n" +
+                  "- FastAPI no expuesto (0.0.0.0)\n\n" +
+                  "ERROR REAL:\n" + e.message);
+        return;
     }
-}
 
-/* TEST API */
-async function testAPI(){
-
+    // 2. TEST PDAS
     try {
-        let pdas = await fetch(API + "/pdas/");
-        let users = await fetch(API + "/usuarios/");
-        let asign = await fetch(API + "/asignaciones/");
+        setStatus("2/4 Probando /pdas...");
 
-        let p = await pdas.json();
-        let u = await users.json();
-        let a = await asign.json();
+        let r = await fetch(API + "/pdas/");
+        let data = await r.json();
 
-        console.log("PDAS:", p);
-        console.log("USUARIOS:", u);
-        console.log("ASIGNACIONES:", a);
-
-        showError(
-            "PDAS: " + JSON.stringify(p) + "\n\n" +
-            "USUARIOS: " + JSON.stringify(u) + "\n\n" +
-            "ASIGNACIONES: " + JSON.stringify(a)
-        );
-
+        setStatus("✔ PDAS OK (" + (Array.isArray(data)?data.length:1) + ")");
     } catch(e){
-        showError("Error API TEST:\n" + e.message);
+        showError("❌ ERROR /pdas/\n" + e.message);
+        return;
     }
+
+    // 3. TEST USUARIOS
+    try {
+        setStatus("3/4 Probando /usuarios...");
+
+        let r = await fetch(API + "/usuarios/");
+        let data = await r.json();
+
+        setStatus("✔ USUARIOS OK (" + data.length + ")");
+    } catch(e){
+        showError("❌ ERROR /usuarios/\n" + e.message);
+        return;
+    }
+
+    // 4. TEST ASIGNACIONES
+    try {
+        setStatus("4/4 Probando /asignaciones...");
+
+        let r = await fetch(API + "/asignaciones/");
+        let data = await r.json();
+
+        setStatus("✔ ASIGNACIONES OK (" + data.length + ")");
+    } catch(e){
+        showError("❌ ERROR /asignaciones/\n" + e.message);
+        return;
+    }
+
+    setStatus("🎉 TODO FUNCIONA CORRECTAMENTE");
 }
 
-/* ERROR */
+/* UI */
+function setStatus(msg){
+    document.getElementById("status").innerHTML = msg;
+}
+
 function showError(msg){
     document.getElementById("error").innerText = msg;
 }
-
-/* LOGOUT */
-function logout(){
-    location.reload();
-}
-
-/* APPS */
-function abrirApp(pkg){
-    if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
-        try { AndroidApp.abrirApp(pkg); return; }
-        catch(e){}
-    }
-
-    window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
-}
-
-window.onload = inicializar;
 
 </script>
 
