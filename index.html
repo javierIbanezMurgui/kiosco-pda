@@ -3,49 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Sistema PDA Aza (DEBUG)</title>
+<title>PDA DEBUG AZA</title>
 
 <style>
-    body { 
-        font-family: Arial; 
-        background: #f2f2f2; 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        height: 100vh; 
-        margin: 0; 
-    }
-    .card { 
-        background: white; 
-        padding: 30px; 
-        border-radius: 10px; 
-        width: 90%; 
-        max-width: 350px; 
-        text-align: center; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
-    }
-    button { 
-        width: 100%; 
-        padding: 15px; 
-        margin: 10px 0; 
-        border-radius: 5px; 
-        border: 1px solid #ccc; 
-        box-sizing: border-box; 
-        font-size: 16px;
-        background: #007bff;
-        color: white;
-        font-weight: bold;
-    }
-    #menu { 
-        display: none; 
-        margin-top: 20px; 
-    }
-    .btn-logout {
-        background: #dc3545 !important;
-    }
-    .btn-secondary {
-        background: #6c757d !important;
-    }
+body {
+    font-family: Arial;
+    background: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.card {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 350px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    font-weight: bold;
+    background: #007bff;
+    color: white;
+}
+
+#menu { display:none; }
+
+#error {
+    color:red;
+    white-space:pre-line;
+    margin-top:10px;
+}
 </style>
 </head>
 
@@ -53,63 +52,96 @@
 
 <div class="card">
 
-    <h2 id="pdaLabel">MODO DEBUG</h2>
+<h2 id="pdaLabel">DEBUG MODE</h2>
 
-    <!-- LOGIN DESACTIVADO -->
-    <div id="login" style="display:none;">
-        <p>Login desactivado en modo debug</p>
-    </div>
+<div id="login" style="display:none;">
+    <p>Modo debug activo</p>
+</div>
 
-    <!-- MENU SIEMPRE DISPONIBLE -->
-    <div id="menu">
+<div id="menu">
 
-        <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
+    <button onclick="testAPI()">🔍 TEST API</button>
 
-        <button onclick="abrirApp('es.tlsi.whales.android')">📦 Whales</button>
-        <button onclick="abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
-        <button onclick="abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
-        <button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
+    <button onclick="abrirApp('es.tlsi.whales.android')">Whales</button>
+    <button onclick="abrirApp('com.datalogic.scan2deploy')">Scan2Deploy</button>
+    <button onclick="abrirApp('com.azalogistics.aza_scanner')">Scanner</button>
+    <button onclick="abrirApp('es.tlsi.mobile')">Whales nuevo</button>
 
-        <label class="btn-secondary">
-            📷 Cámara/Galería
-            <input type="file" accept="image/*" capture="environment" onchange="handleImageCapture(this)" hidden>
-        </label>
+    <button onclick="logout()">Cerrar sesión</button>
 
-        <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
-
-        <button class="btn-logout" onclick="logout()">Cerrar sesión (solo reset)</button>
-    </div>
+    <div id="error"></div>
+</div>
 
 </div>
 
 <script>
+
 const API = "http://192.168.2.33:8000";
 
 let USUARIO_ACTUAL = "DEBUG";
 
 /* INIT */
 async function inicializar(){
-    console.log("Modo debug activo");
+    console.log("Iniciando debug...");
 
     try {
-        let resp = await fetch(API + "/health");
-        let data = await resp.text();
 
-        console.log("HEALTH RESPONSE:", data);
+        // 🔥 HEALTH FIX (GET EXPLÍCITO)
+        let resp = await fetch(API + "/health", {
+            method: "GET"
+        });
+
+        let text = await resp.text();
+
+        console.log("HEALTH:", text);
+
+        document.getElementById("menu").style.display = "block";
 
     } catch(e){
-        console.error("API NO DISPONIBLE:", e);
+        console.error("ERROR HEALTH:", e);
+        showError("Sin conexión con API\n" + e.message);
+        document.getElementById("menu").style.display = "block";
     }
-
-    document.getElementById("menu").style.display = "block";
 }
 
-/* LOGOUT (solo reset) */
+/* TEST API */
+async function testAPI(){
+
+    try {
+        let pdas = await fetch(API + "/pdas/");
+        let users = await fetch(API + "/usuarios/");
+        let asign = await fetch(API + "/asignaciones/");
+
+        let p = await pdas.json();
+        let u = await users.json();
+        let a = await asign.json();
+
+        console.log("PDAS:", p);
+        console.log("USUARIOS:", u);
+        console.log("ASIGNACIONES:", a);
+
+        showError(
+            "PDAS: " + JSON.stringify(p) + "\n\n" +
+            "USUARIOS: " + JSON.stringify(u) + "\n\n" +
+            "ASIGNACIONES: " + JSON.stringify(a)
+        );
+
+    } catch(e){
+        showError("Error API TEST:\n" + e.message);
+    }
+}
+
+/* ERROR */
+function showError(msg){
+    document.getElementById("error").innerText = msg;
+}
+
+/* LOGOUT */
 function logout(){
     location.reload();
 }
 
-/* ABRIR APP */
+/* APPS */
 function abrirApp(pkg){
     if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
         try { AndroidApp.abrirApp(pkg); return; }
@@ -119,16 +151,8 @@ function abrirApp(pkg){
     window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
 }
 
-/* IMAGEN */
-function handleImageCapture(input){
-    const file = input.files[0];
-    if (file){
-        alert("Imagen: " + file.name);
-        input.value = "";
-    }
-}
-
 window.onload = inicializar;
+
 </script>
 
 </body>
