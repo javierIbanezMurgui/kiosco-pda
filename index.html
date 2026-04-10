@@ -121,6 +121,7 @@ const API = "http://192.168.2.33:8000";
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
 
+/* DEVICE */
 function getDeviceId(){
     if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
         try { return AndroidApp.getPdaId(); }
@@ -129,6 +130,7 @@ function getDeviceId(){
     return "TEST_PC";
 }
 
+/* GEO */
 async function getCoords(){
     return new Promise((resolve) => {
         if (!navigator.geolocation) return resolve({lat:0,lng:0});
@@ -140,7 +142,7 @@ async function getCoords(){
     });
 }
 
-/* INIT */
+/* INIT (FIX IMPORTANTE AQUÍ) */
 async function inicializar(){
     try {
         let device = getDeviceId();
@@ -149,18 +151,24 @@ async function inicializar(){
         if (!resp.ok) throw new Error("Error API");
 
         let data = await resp.json();
-        let pda = data.find(d => d.device == device);
+
+        console.log("PDAS:", data); // DEBUG
+
+        let pda = Array.isArray(data)
+            ? data.find(d => d.device == device)
+            : (data.device == device ? data : null);
 
         if (pda){
-            PDA_NUMERO = pda.numeroPda || pda.id;
+            PDA_NUMERO = pda.numeroPda || pda.numPDA || pda.id;
             document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
             document.getElementById("loginBtn").disabled = false;
         } else {
             document.getElementById("pdaLabel").innerText = "No registrado";
-            showError("ID: " + device);
+            showError("ID: " + device + "\nNo registrado");
         }
 
     } catch(e){
+        console.error("INIT ERROR:", e);
         document.getElementById("pdaLabel").innerText = "Error conexión";
         showError("Sin conexión con API");
     }
@@ -189,6 +197,8 @@ async function login(){
         }
 
         let users = await resp.json();
+
+        console.log("USUARIOS:", users); // DEBUG
 
         let user = users.find(x => x.usuario === u);
 
@@ -223,6 +233,7 @@ async function login(){
         document.getElementById("pin").value = "";
 
     } catch(e){
+        console.error("LOGIN ERROR:", e);
         showError(e.message || "Error de login");
         document.getElementById("pin").value = "";
     } finally {
