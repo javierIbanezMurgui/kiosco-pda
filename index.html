@@ -26,12 +26,11 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
 }
 
-    .logo-img {
-        max-width: 150px;
-        height: auto;
-        margin-bottom: 20px;
-    }
-
+.logo-img {
+    max-width: 150px;
+    height: auto;
+    margin-bottom: 20px;
+}
 
 input, button { 
     width: 100%; 
@@ -73,35 +72,30 @@ button:disabled { background: #ccc; }
     <input id="pin" type="password" placeholder="PIN">
     <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
 
-```
-<div id="error"></div>
+    <div id="error"></div>
 
-<div id="loading" style="display:none; color:#007bff; font-weight:bold;">
-    Iniciando sesión...
-</div>
-```
-
+    <div id="loading" style="display:none; color:#007bff; font-weight:bold;">
+        Iniciando sesión...
+    </div>
 </div>
 
 <div id="menu" style="display:none;">
 
-```
-<button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
+    <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
 
-<button onclick="abrirApp('es.tlsi.whales.android')">📦 Whales</button>
-<button onclick="abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
-<button onclick="abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
-<button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
+    <button onclick="abrirApp('es.tlsi.whales.android')">📦 Whales</button>
+    <button onclick="abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
+    <button onclick="abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+    <button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
-<label class="btn-secondary">
-    📷 Cámara/Galería
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageCapture(this)" hidden>
-</label>
+    <label class="btn-secondary">
+        📷 Cámara/Galería
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageCapture(this)" hidden>
+    </label>
 
-<button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
+    <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
 
-<button class="btn-logout" onclick="logout()">Cerrar sesión</button>
-```
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
 
 </div>
 
@@ -140,10 +134,15 @@ async function inicializar(){
     try{
         const device = getDeviceId();
 
-        let resp = await fetch(API + "/pdas/");
+        let resp = await fetch(`${API}/pdas/`);
         let data = await resp.json();
 
-        let pda = data.find(d => String(d.device) === String(device));
+        // Buscar PDA por device, imei o serial
+        let pda = data.find(d =>
+            String(d.device) === String(device) ||
+            String(d.imei) === String(device) ||
+            String(d.serial) === String(device)
+        );
 
         if (pda){
             PDA_NUMERO = pda.numPDA;
@@ -176,9 +175,11 @@ async function login(){
 
     try{
 
-        let resp = await fetch(API + `/usuarios/?usuario=${encodeURIComponent(u)}`);
+        // FastAPI: obtener todos los usuarios
+        let resp = await fetch(`${API}/usuarios/`);
         let users = await resp.json();
 
+        // Filtrar en frontend
         let user = users.find(x => x.usuario === u && x.pin === p);
 
         if (!user){
@@ -194,7 +195,7 @@ async function login(){
 
         let coords = await getCoords();
 
-        await fetch(API + "/asignaciones/", {
+        await fetch(`${API}/asignaciones/`, {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -206,7 +207,7 @@ async function login(){
             })
         });
 
-        await fetch(API + "/logs/login", {
+        await fetch(`${API}/logs/login`, {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -225,7 +226,7 @@ async function login(){
         pin.value = "";
 
     }catch(e){
-        showError("Error de conexión");
+        showError("Error de conexión con el servidor");
     }finally{
         loginBtn.disabled = false;
         loading.style.display = "none";
@@ -240,7 +241,7 @@ async function logout(){
     let coords = await getCoords();
 
     try{
-        await fetch(API + "/logs/logout", {
+        await fetch(`${API}/logs/logout`, {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -260,7 +261,7 @@ async function logout(){
 /* ================= HEARTBEAT ================= */
 setInterval(()=>{
     if (USUARIO_ACTUAL){
-        fetch(API + "/logs/heartbeat", {
+        fetch(`${API}/logs/heartbeat`, {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
