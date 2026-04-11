@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8">
@@ -6,186 +7,155 @@
 <title>Sistema PDA Aza</title>
 
 <style>
-    body { 
-        font-family: Arial; 
-        background: #f2f2f2; 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        height: 100vh; 
-        margin: 0; 
-    }
-    .card { 
-        background: white; 
-        padding: 30px; 
-        border-radius: 10px; 
-        width: 90%; 
-        max-width: 350px; 
-        text-align: center; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
-    }
-    input, button { 
-        width: 100%; 
-        padding: 15px; 
-        margin: 10px 0; 
-        border-radius: 5px; 
-        border: 1px solid #ccc; 
-        box-sizing: border-box; 
-        font-size: 16px;
-    }
-    button { 
-        background: #007bff; 
-        color: white; 
-        border: none; 
-        font-size: 16px; 
-        font-weight: bold; 
-        cursor: pointer;
-    }
-    button:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-    }
-    #menu, #error { 
-        display: none; 
-        margin-top: 20px; 
-    }
-    #error {
-        color: #dc3545;
-        font-weight: bold;
-        white-space: pre-line;
-    }
-    .logo-img {
-        max-width: 150px;
-        height: auto;
-        margin-bottom: 20px;
-    }
-    .btn-logout {
-        background: #dc3545 !important;
-    }
-    button:active {
-        transform: scale(0.95);
-    }
-    .btn-secondary {
-        background: #6c757d !important;
-    }
-    .btn-secondary:active {
-        background: #545b62 !important;
-    }
+body { 
+    font-family: Arial; 
+    background: #f2f2f2; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    margin: 0; 
+}
+.card { 
+    background: white; 
+    padding: 30px; 
+    border-radius: 10px; 
+    width: 90%; 
+    max-width: 350px; 
+    text-align: center; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+}
+input, button { 
+    width: 100%; 
+    padding: 15px; 
+    margin: 10px 0; 
+    border-radius: 5px; 
+    border: 1px solid #ccc; 
+    box-sizing: border-box; 
+    font-size: 16px;
+}
+button { 
+    background: #007bff; 
+    color: white; 
+    border: none; 
+    font-weight: bold; 
+}
+button:disabled { background: #ccc; }
+.btn-logout { background: #dc3545 !important; }
+.btn-secondary { background: #6c757d !important; }
+
+#error {
+    color: red;
+    display: none;
+    margin-top: 10px;
+    white-space: pre-line;
+}
 </style>
+
 </head>
+
 <body>
 
 <div class="card">
-    <img src="aza-logistics.png" class="logo-img" alt="Aza Logistics" onerror="this.style.display='none'">
 
-    <h2 id="pdaLabel">Cargando...</h2>
+<h2 id="pdaLabel">Cargando...</h2>
 
-    <div id="login">
-        <input id="usuario" placeholder="Usuario" autocomplete="username">
-        <input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
-        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
+<div id="login">
+    <input id="usuario" placeholder="Usuario">
+    <input id="pin" type="password" placeholder="PIN">
+    <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
 
-        <div id="error"></div>
+```
+<div id="error"></div>
 
-        <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
-            Iniciando sesión...
-        </div>
-    </div>
+<div id="loading" style="display:none; color:#007bff; font-weight:bold;">
+    Iniciando sesión...
+</div>
+```
 
-    <div id="menu">
+</div>
 
-        <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
+<div id="menu" style="display:none;">
 
-        <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
-        <button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
-        <button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
-        <button onclick="AndroidApp.abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
+```
+<button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
 
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(this)">
-        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galeria</button>
+<button onclick="abrirApp('es.tlsi.whales.android')">📦 Whales</button>
+<button onclick="abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
+<button onclick="abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+<button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
-        <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
+<label class="btn-secondary">
+    📷 Cámara/Galería
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageCapture(this)" hidden>
+</label>
 
-        <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
-    </div>
+<button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
+
+<button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+```
+
+</div>
+
 </div>
 
 <script>
-/* ============================
-   CONFIGURACIÓN API REAL
-============================ */
-const API = "http://192.168.2.33:8000";
+
+const API = "http://192.168.2.33";
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
 
-/* ============================
-   FUNCIONES AUXILIARES
-============================ */
+/* ================= DEVICE ================= */
 function getDeviceId(){
-    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
+    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId){
         try { return AndroidApp.getPdaId(); }
-        catch(e) { return "WEB_ERROR"; }
+        catch(e) {}
     }
     return "TEST_PC";
 }
 
-async function getCoords(){
-    return new Promise((resolve) => {
+/* ================= GEO ================= */
+function getCoords(){
+    return new Promise(resolve=>{
         if (!navigator.geolocation) return resolve({lat:0,lng:0});
         navigator.geolocation.getCurrentPosition(
             p => resolve({lat:p.coords.latitude, lng:p.coords.longitude}),
             () => resolve({lat:0,lng:0}),
-            {timeout:5000, enableHighAccuracy:true}
+            {timeout:5000}
         );
     });
 }
 
-function handleImageCapture(input){
-    const file = input.files[0];
-    if (file){
-        const reader = new FileReader();
-        reader.onload = () => alert("Imagen lista: " + file.name);
-        reader.readAsDataURL(file);
-        input.value = "";
-    }
-}
-
-function showError(msg){
-    document.getElementById("error").innerText = msg;
-    document.getElementById("error").style.display = msg ? "block" : "none";
-}
-
-/* ============================
-   INICIALIZACIÓN PDA
-============================ */
+/* ================= INIT ================= */
 async function inicializar(){
-    try {
-        const deviceId = getDeviceId();
+    try{
+        const device = getDeviceId();
 
-        let resp = await fetch(`${API}/pdas/?device=${encodeURIComponent(deviceId)}`);
+        let resp = await fetch(API + "/pdas/");
         let data = await resp.json();
 
-        if (data.length > 0) {
-            PDA_NUMERO = data[0].id;
-            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
-            document.getElementById("loginBtn").disabled = false;
-        } else {
-            document.getElementById("pdaLabel").innerText = "No registrado";
-            showError("ID: " + deviceId + "\nContacta con el jefe de almacén");
+        let pda = data.find(d => String(d.device) === String(device));
+
+        if (pda){
+            PDA_NUMERO = pda.numPDA;
+            pdaLabel.innerText = "PDA " + PDA_NUMERO;
+            loginBtn.disabled = false;
+        }else{
+            pdaLabel.innerText = "No registrado";
+            showError("ID: " + device + "\nContacta con soporte");
         }
-    } catch(e){
-        document.getElementById("pdaLabel").innerText = "Error conexión";
-        showError("Sin internet");
+    }catch(e){
+        pdaLabel.innerText = "Error conexión";
+        showError("Sin conexión al servidor");
     }
 }
 
-/* ============================
-   LOGIN
-============================ */
+/* ================= LOGIN ================= */
 async function login(){
-    let u = document.getElementById("usuario").value.trim();
-    let p = document.getElementById("pin").value;
+
+    let u = usuario.value.trim();
+    let p = pin.value;
 
     if (!u || !p || !PDA_NUMERO){
         showError("Complete todos los campos");
@@ -193,25 +163,42 @@ async function login(){
     }
 
     showError("");
-    document.getElementById("loading").style.display = "block";
-    document.getElementById("loginBtn").disabled = true;
+    loading.style.display = "block";
+    loginBtn.disabled = true;
 
-    try {
-        // Validar usuario
-        let resp = await fetch(`${API}/usuarios/?usuario=${encodeURIComponent(u)}&pin=${encodeURIComponent(p)}`);
+    try{
+
+        let resp = await fetch(API + `/usuarios/?usuario=${encodeURIComponent(u)}`);
         let users = await resp.json();
 
-        if (users.length === 0){
+        let user = users.find(x => x.usuario === u && x.pin === p);
+
+        if (!user){
             showError("Usuario o PIN incorrecto");
-            document.getElementById("pin").value = "";
+            pin.value = "";
             return;
         }
 
-        USUARIO_ACTUAL = u;
+        if (String(user.numPDA) !== String(PDA_NUMERO)){
+            showError("Esta no es tu PDA");
+            return;
+        }
 
-        // Registrar login
         let coords = await getCoords();
-        await fetch(`${API}/logs/login`, {
+
+        await fetch(API + "/asignaciones/", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: u,
+                pda: PDA_NUMERO,
+                device: getDeviceId(),
+                estado: "LOGIN",
+                fecha: new Date().toISOString()
+            })
+        });
+
+        await fetch(API + "/logs/login", {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -223,32 +210,29 @@ async function login(){
             })
         });
 
-        // Mostrar menú
-        document.getElementById("login").style.display = "none";
-        document.getElementById("menu").style.display = "block";
-        document.getElementById("pin").value = "";
+        USUARIO_ACTUAL = u;
 
-    } catch(e){
+        login.style.display = "none";
+        menu.style.display = "block";
+        pin.value = "";
+
+    }catch(e){
         showError("Error de conexión");
-    } finally {
-        document.getElementById("loginBtn").disabled = false;
-        document.getElementById("loading").style.display = "none";
+    }finally{
+        loginBtn.disabled = false;
+        loading.style.display = "none";
     }
 }
 
-/* ============================
-   LOGOUT
-============================ */
+/* ================= LOGOUT ================= */
 async function logout(){
-    if (!USUARIO_ACTUAL || !PDA_NUMERO){
-        location.reload();
-        return;
-    }
+
+    if (!USUARIO_ACTUAL) return;
 
     let coords = await getCoords();
 
-    try {
-        await fetch(`${API}/logs/logout`, {
+    try{
+        await fetch(API + "/logs/logout", {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -259,18 +243,16 @@ async function logout(){
                 lng: coords.lng
             })
         });
-    } catch(e){}
+    }catch(e){}
 
     USUARIO_ACTUAL = null;
     location.reload();
 }
 
-/* ============================
-   HEARTBEAT
-============================ */
-setInterval(() => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
-        fetch(`${API}/logs/heartbeat`, {
+/* ================= HEARTBEAT ================= */
+setInterval(()=>{
+    if (USUARIO_ACTUAL){
+        fetch(API + "/logs/heartbeat", {
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -280,25 +262,45 @@ setInterval(() => {
             })
         });
     }
-}, 60000);
+},120000);
 
-/* ============================
-   IDLE TIMEOUT (7 min)
-============================ */
+/* ================= IDLE LOGOUT ================= */
 let ultimoMovimiento = Date.now();
-["touchstart","click","keydown","mousemove"].forEach(ev => 
-    document.addEventListener(ev, () => ultimoMovimiento = Date.now())
+["touchstart","click","keydown","mousemove"].forEach(ev =>
+    document.addEventListener(ev, ()=> ultimoMovimiento = Date.now())
 );
 
-setInterval(async () => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
-        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
-            await logout();
-        }
+setInterval(async ()=>{
+    if (USUARIO_ACTUAL && Date.now() - ultimoMovimiento > 7*60*1000){
+        await logout();
     }
-}, 60000);
+},60000);
 
-document.addEventListener("DOMContentLoaded", inicializar);
+/* ================= APP LAUNCH ================= */
+function abrirApp(pkg){
+    if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
+        try { AndroidApp.abrirApp(pkg); return; } catch(e){}
+    }
+    window.location.href = `intent:#Intent;package=${pkg};end`;
+}
+
+/* ================= CAMERA ================= */
+function handleImageCapture(input){
+    const file = input.files[0];
+    if (file){
+        alert("Imagen lista: " + file.name);
+        input.value = "";
+    }
+}
+
+/* ================= ERROR ================= */
+function showError(msg){
+    error.innerText = msg;
+    error.style.display = msg ? "block" : "none";
+}
+
+window.onload = inicializar;
+
 </script>
 
 <div id="adminEscape"
