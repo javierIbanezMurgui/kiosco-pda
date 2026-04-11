@@ -76,11 +76,8 @@
         <button onclick="abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
         <button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
-        <input type="file" id="cameraInput" accept="image/*" capture="environment"
-               style="display:none;" onchange="handleImageCapture(this)">
-        <button class="btn-secondary" onclick="document.getElementById('cameraInput').click()">
-            📷 Cámara/Galería
-        </button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(this)">
+        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galeria</button>
 
         <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">
             🚚 ActivaLink
