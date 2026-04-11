@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8">
@@ -65,19 +64,15 @@ button:disabled { background: #ccc; }
     <input id="pin" type="password" placeholder="PIN">
     <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
 
-```
-<div id="error"></div>
+    <div id="error"></div>
 
-<div id="loading" style="display:none; color:#007bff; font-weight:bold;">
-    Iniciando sesión...
-</div>
-```
-
+    <div id="loading" style="display:none; color:#007bff; font-weight:bold;">
+        Iniciando sesión...
+    </div>
 </div>
 
 <div id="menu" style="display:none;">
 
-```
 <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
 
 <button onclick="abrirApp('es.tlsi.whales.android')">📦 Whales</button>
@@ -86,14 +81,13 @@ button:disabled { background: #ccc; }
 <button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
 <label class="btn-secondary">
-    📷 Cámara/Galería
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageCapture(this)" hidden>
+📷 Cámara/Galería
+<input type="file" accept="image/*" capture="environment" onchange="handleImageCapture(this)" hidden>
 </label>
 
 <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
 
 <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
-```
 
 </div>
 
@@ -105,35 +99,31 @@ const API = "http://192.168.2.33:8000";
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
+let API_OK = false;
 
-/* ================= DEVICE ================= */
+/* DEVICE */
 function getDeviceId(){
     if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId){
         try { return AndroidApp.getPdaId(); }
-        catch(e) {}
+        catch(e){}
     }
     return "TEST_PC";
 }
 
-/* ================= GEO ================= */
-function getCoords(){
-    return new Promise(resolve=>{
-        if (!navigator.geolocation) return resolve({lat:0,lng:0});
-        navigator.geolocation.getCurrentPosition(
-            p => resolve({lat:p.coords.latitude, lng:p.coords.longitude}),
-            () => resolve({lat:0,lng:0}),
-            {timeout:5000}
-        );
-    });
-}
-
-/* ================= INIT ================= */
+/* INIT */
 async function inicializar(){
     try{
         const device = getDeviceId();
 
+        console.log("ANTES FETCH PDAS");
+
         let resp = await fetch(API + "/pdas/");
+
+        console.log("DESPUÉS FETCH PDAS");
+
         let data = await resp.json();
+
+        console.log("PDAS:", data);
 
         let pda = data.find(d => String(d.device) === String(device));
 
@@ -141,138 +131,89 @@ async function inicializar(){
             PDA_NUMERO = pda.numPDA;
             pdaLabel.innerText = "PDA " + PDA_NUMERO;
             loginBtn.disabled = false;
+            API_OK = true;
         }else{
-            pdaLabel.innerText = "No registrado";
-            showError("ID: " + device + "\nContacta con soporte");
+            throw new Error("PDA no registrada");
         }
+
     }catch(e){
-        pdaLabel.innerText = "Error conexión";
-        showError("Sin conexión al servidor");
+
+        console.error("ERROR API:", e);
+
+        // 🔥 FALLBACK (modo local)
+        PDA_NUMERO = 4;
+        pdaLabel.innerText = "PDA " + PDA_NUMERO + " (OFFLINE)";
+        loginBtn.disabled = false;
+
+        showError("⚠️ Sin conexión API\nModo offline activo");
     }
 }
 
-/* ================= LOGIN ================= */
+/* LOGIN */
 async function login(){
 
     let u = usuario.value.trim();
     let p = pin.value;
 
-    if (!u || !p || !PDA_NUMERO){
-        showError("Complete todos los campos");
+    if (!u || !p){
+        showError("Escribe usuario y PIN");
         return;
     }
 
-    showError("");
     loading.style.display = "block";
     loginBtn.disabled = true;
 
     try{
 
-        let resp = await fetch(API + `/usuarios/?usuario=${encodeURIComponent(u)}`);
+        // 🔥 SI API FALLA → LOGIN LOCAL
+        if (!API_OK){
+            console.log("LOGIN OFFLINE");
+
+            USUARIO_ACTUAL = u;
+
+            login.style.display = "none";
+            menu.style.display = "block";
+            return;
+        }
+
+        console.log("LOGIN API");
+
+        let resp = await fetch(API + "/usuarios/");
         let users = await resp.json();
 
-        let user = users.find(x => x.usuario === u && x.pin === p);
+        let user = users.find(x => x.usuario === u);
 
         if (!user){
-            showError("Usuario o PIN incorrecto");
-            pin.value = "";
-            return;
+            throw new Error("Usuario no existe");
+        }
+
+        if (String(user.pin) !== String(p)){
+            throw new Error("PIN incorrecto");
         }
 
         if (String(user.numPDA) !== String(PDA_NUMERO)){
-            showError("Esta no es tu PDA");
-            return;
+            throw new Error("No es tu PDA");
         }
-
-        let coords = await getCoords();
-
-        await fetch(API + "/asignaciones/", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({
-                usuario: u,
-                pda: PDA_NUMERO,
-                device: getDeviceId(),
-                estado: "LOGIN",
-                fecha: new Date().toISOString()
-            })
-        });
-
-        await fetch(API + "/logs/login", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({
-                usuario: u,
-                pda: PDA_NUMERO,
-                device: getDeviceId(),
-                lat: coords.lat,
-                lng: coords.lng
-            })
-        });
 
         USUARIO_ACTUAL = u;
 
         login.style.display = "none";
         menu.style.display = "block";
-        pin.value = "";
 
     }catch(e){
-        showError("Error de conexión");
+        showError(e.message || "Error login");
     }finally{
-        loginBtn.disabled = false;
         loading.style.display = "none";
+        loginBtn.disabled = false;
     }
 }
 
-/* ================= LOGOUT ================= */
-async function logout(){
-
-    if (!USUARIO_ACTUAL) return;
-
-    let coords = await getCoords();
-
-    try{
-        await fetch(API + "/logs/logout", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({
-                usuario: USUARIO_ACTUAL,
-                pda: PDA_NUMERO,
-                device: getDeviceId(),
-                lat: coords.lat,
-                lng: coords.lng
-            })
-        });
-    }catch(e){}
-
-    USUARIO_ACTUAL = null;
+/* LOGOUT */
+function logout(){
     location.reload();
 }
 
-/* ================= HEARTBEAT ================= */
-setInterval(() => {
-    if (USUARIO_ACTUAL){
-        const url = `${API}/logs/heartbeat?usuario=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(PDA_NUMERO)}&device=${encodeURIComponent(getDeviceId())}`;
-
-        fetch(url, {
-            method: "GET"
-        }).catch(() => {});
-    }
-}, 120000);
-
-/* ================= IDLE LOGOUT ================= */
-let ultimoMovimiento = Date.now();
-["touchstart","click","keydown","mousemove"].forEach(ev =>
-    document.addEventListener(ev, ()=> ultimoMovimiento = Date.now())
-);
-
-setInterval(async ()=>{
-    if (USUARIO_ACTUAL && Date.now() - ultimoMovimiento > 7*60*1000){
-        await logout();
-    }
-},60000);
-
-/* ================= APP LAUNCH ================= */
+/* APPS */
 function abrirApp(pkg){
     if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
         try { AndroidApp.abrirApp(pkg); return; } catch(e){}
@@ -280,16 +221,16 @@ function abrirApp(pkg){
     window.location.href = `intent:#Intent;package=${pkg};end`;
 }
 
-/* ================= CAMERA ================= */
+/* IMAGE */
 function handleImageCapture(input){
     const file = input.files[0];
     if (file){
-        alert("Imagen lista: " + file.name);
+        alert("Imagen: " + file.name);
         input.value = "";
     }
 }
 
-/* ================= ERROR ================= */
+/* ERROR */
 function showError(msg){
     error.innerText = msg;
     error.style.display = msg ? "block" : "none";
@@ -298,11 +239,6 @@ function showError(msg){
 window.onload = inicializar;
 
 </script>
-
-<div id="adminEscape"
-     style="position:fixed; bottom:0; right:0; width:60px; height:60px; opacity:0;"
-     onclick="AndroidApp.solicitarPinAdmin()">
-</div>
 
 </body>
 </html>
