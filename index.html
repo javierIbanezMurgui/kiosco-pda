@@ -2,205 +2,303 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Sistema PDA Aza</title>
+
 <style>
-body { font-family: Arial; background:#f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-.card { background:white; padding:30px; border-radius:10px; width:90%; max-width:350px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.2); }
-input,button,label { width:100%; padding:15px; margin:10px 0; border-radius:5px; border:1px solid #ccc; font-size:16px; display:block; box-sizing:border-box; }
-button { background:#007bff; color:white; border:none; font-weight:bold; }
-button:disabled { background:#ccc; }
-.btn-secondary { background:#6c757d; color:white; }
-.btn-logout { background:#dc3545 !important; }
-#error { color:#dc3545; font-weight:bold; display:none; white-space:pre-line; }
-#menu { display:none; }
+    body { 
+        font-family: Arial; 
+        background: #f2f2f2; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        margin: 0; 
+    }
+    .card { 
+        background: white; 
+        padding: 30px; 
+        border-radius: 10px; 
+        width: 90%; 
+        max-width: 350px; 
+        text-align: center; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+    }
+    input, button { 
+        width: 100%; 
+        padding: 15px; 
+        margin: 10px 0; 
+        border-radius: 5px; 
+        border: 1px solid #ccc; 
+        box-sizing: border-box; 
+        font-size: 16px;
+    }
+    button { 
+        background: #007bff; 
+        color: white; 
+        border: none; 
+        font-size: 16px; 
+        font-weight: bold; 
+        cursor: pointer;
+    }
+    button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    #menu, #error { 
+        display: none; 
+        margin-top: 20px; 
+    }
+    #error {
+        color: #dc3545;
+        font-weight: bold;
+        white-space: pre-line;
+    }
+    .logo-img {
+        max-width: 150px;
+        height: auto;
+        margin-bottom: 20px;
+    }
+    .btn-logout {
+        background: #dc3545 !important;
+    }
+    button:active {
+        transform: scale(0.95);
+    }
+    .btn-logout:active {
+        background: #a71d2a !important;
+    }
+    .btn-secondary {
+        background: #6c757d !important;
+    }
+    .btn-secondary:active {
+        background: #545b62 !important;
+    }
 </style>
 </head>
 <body>
 
 <div class="card">
-<h2 id="pdaLabel">Cargando...</h2>
+    <img src="aza-logistics.png" class="logo-img" alt="Aza Logistics" onerror="this.style.display='none'">
 
-<div id="login">
-<input id="usuario" placeholder="Usuario">
-<input id="pin" type="password" placeholder="PIN">
-<button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
-<div id="error"></div>
-</div>
+    <h2 id="pdaLabel">Cargando...</h2>
 
-<div id="menu">
-<button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
-<button onclick="abrirApp('es.tlsi.whales.android')">📦 Whales</button>
-<button onclick="abrirApp('com.datalogic.scan2deploy')">📦 Scan2Deploy</button>
-<button onclick="abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
-<button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
+    <div id="login">
+        <input id="usuario" placeholder="Usuario" autocomplete="username">
+        <input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
+        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
 
-<label class="btn-secondary">
-📷 Cámara / Galería
-<input type="file" accept="image/*" capture="environment" onchange="handleImage(this)" hidden>
-</label>
+        <div id="error"></div>
 
-<button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
+        <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
+            Iniciando sesión...
+        </div>
+    </div>
 
-<button class="btn-logout" onclick="logout()">Cerrar sesión</button>
-</div>
+    <div id="menu">
 
+        <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
+
+        <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
+        <button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
+
+
+<button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+
+        <button onclick="AndroidApp.abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
+
+
+        <button
+
+
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(this)">
+        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galeria</button>
+
+        <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
+
+        <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
 </div>
 
 <script>
+const API = "https://script.google.com/macros/s/AKfycbyX035p6lj9f4Szzn5Y4-5Y9OF9pVOg9d2t9kNk2GOfxShDsTP2iBcGB8gDNULFnfEG/exec";
 
-const API = "http://192.168.2.33:8000";
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
 
 function getDeviceId(){
-    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId){
-        try { return AndroidApp.getPdaId(); } catch(e){}
+    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
+        try { return AndroidApp.getPdaId(); }
+        catch(e) { return "WEB_ERROR"; }
     }
     return "TEST_PC";
 }
 
-function showError(msg){
-    const el = document.getElementById("error");
-    el.innerText = msg;
-    el.style.display = msg ? "block" : "none";
-}
-
 async function getCoords(){
-    return new Promise(resolve=>{
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve({lat:0,lng:0});
         navigator.geolocation.getCurrentPosition(
-            p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
-            ()=>resolve({lat:0,lng:0}),
-            {timeout:5000}
+            p => resolve({lat:p.coords.latitude, lng:p.coords.longitude}),
+            () => resolve({lat:0,lng:0}),
+            {timeout:5000, enableHighAccuracy:true}
         );
     });
 }
 
-function handleImage(input){
+function handleImageCapture(input){
     const file = input.files[0];
     if (file){
-        alert("Imagen capturada: " + file.name);
+        const reader = new FileReader();
+        reader.onload = () => alert("Imagen lista: " + file.name);
+        reader.readAsDataURL(file);
         input.value = "";
     }
 }
 
-// INIT
 async function inicializar(){
     try {
-        let resp = await fetch(`${API}/pdas/`);
+        let resp = await fetch(API + "?action=init&device=" + encodeURIComponent(getDeviceId()));
         let data = await resp.json();
 
-        let device = getDeviceId();
-        let encontrado = data.find(d=>d.device===device);
-
-        if (encontrado){
-            PDA_NUMERO = encontrado.numeroPda;
+        if (data.status === "ok") {
+            PDA_NUMERO = data.numeroPda;
             document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
             document.getElementById("loginBtn").disabled = false;
         } else {
-            showError("Dispositivo no registrado");
+            document.getElementById("pdaLabel").innerText = "No registrado";
+            showError("ID: " + getDeviceId() + "\nContacta con el jefe de almacén");
         }
-
     } catch(e){
-        showError("Error conexión API");
+        document.getElementById("pdaLabel").innerText = "Error conexión";
+        showError("Sin internet");
     }
 }
 
-// LOGIN
 async function login(){
     let u = document.getElementById("usuario").value.trim();
     let p = document.getElementById("pin").value;
 
-    if (!u || !p){
+    if (!u || !p || !PDA_NUMERO){
         showError("Complete todos los campos");
         return;
     }
 
+    showError("");
+
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("loginBtn").disabled = true;
+
     try {
-        let resp = await fetch(`${API}/usuarios/?usuario=${u}`);
-        let users = await resp.json();
-
-        if (!users.length || users[0].pin != p){
-            showError("Usuario o PIN incorrecto");
-            return;
-        }
-
-        if (String(users[0].numPDA) !== String(PDA_NUMERO)){
-            showError("No es tu PDA");
-            return;
-        }
-
         let coords = await getCoords();
-
-        await fetch(`${API}/logs/login`,{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                usuario:u,
-                pda:PDA_NUMERO,
-                device:getDeviceId(),
-                lat:coords.lat,
-                lng:coords.lng
-            })
+        let body = new URLSearchParams({
+            action:"login",
+            user:u,
+            pin:p,
+            pda:PDA_NUMERO,
+            device:getDeviceId(),
+            lat:coords.lat,
+            lng:coords.lng
         });
 
-        USUARIO_ACTUAL = u;
-        document.getElementById("login").style.display="none";
-        document.getElementById("menu").style.display="block";
+        let resp = await fetch(API, {
+            method:"POST",
+            headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
+            body:body.toString()
+        });
 
+        let data = await resp.json();
+
+        if (data.status === "ok"){
+            USUARIO_ACTUAL = u;
+
+            document.getElementById("login").style.display = "none";
+            document.getElementById("menu").style.display = "block";
+
+            document.getElementById("pin").value = "";
+        } else {
+            showError(data.msg || "Error desconocido");
+            document.getElementById("pin").value = "";
+        }
     } catch(e){
-        showError("Error conexión API");
+        showError("Error de conexión");
+    } finally {
+        document.getElementById("loginBtn").disabled = false;
+        document.getElementById("loading").style.display = "none";
     }
 }
 
-// LOGOUT
+function showError(msg){
+    document.getElementById("error").innerText = msg;
+    document.getElementById("error").style.display = msg ? "block" : "none";
+}
+
 async function logout(){
-    if (!USUARIO_ACTUAL) return;
+    if (!USUARIO_ACTUAL || !PDA_NUMERO){
+        location.reload();
+        return;
+    }
 
     let coords = await getCoords();
 
     try {
-        await fetch(`${API}/logs/logout`,{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                usuario:USUARIO_ACTUAL,
-                pda:PDA_NUMERO,
-                device:getDeviceId(),
-                lat:coords.lat,
-                lng:coords.lng
-            })
-        });
+        await fetch(API + `?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(PDA_NUMERO)}&device=${encodeURIComponent(getDeviceId())}&lat=${coords.lat}&lng=${coords.lng}`);
     } catch(e){}
 
+    USUARIO_ACTUAL = null;
     location.reload();
 }
 
-// HEARTBEAT
-setInterval(()=>{
-    if (USUARIO_ACTUAL){
-        fetch(`${API}/logs/heartbeat`,{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                usuario:USUARIO_ACTUAL,
-                pda:PDA_NUMERO,
-                device:getDeviceId()
-            })
-        });
-    }
-},60000);
-
 function abrirApp(pkg){
     if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
-        try { AndroidApp.abrirApp(pkg); return; } catch(e){}
+        try { AndroidApp.abrirApp(pkg); return; }
+        catch(e){}
     }
-    window.location.href = `intent:#Intent;package=${pkg};end;`;
+    window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
 }
+
+window.addEventListener("beforeunload", () => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        navigator.sendBeacon(API + `?action=logout&user=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(PDA_NUMERO)}&device=${encodeURIComponent(getDeviceId())}&lat=0&lng=0`);
+    }
+});
 
 window.onload = inicializar;
 
+/* ------------------------------
+   HEARTBEAT CADA 30 SEGUNDOS
+--------------------------------*/
+setInterval(() => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        fetch(
+          API 
+          + `?action=heartbeat`
+          + `&user=${encodeURIComponent(USUARIO_ACTUAL)}`
+          + `&pda=${encodeURIComponent(PDA_NUMERO)}`
+          + `&device=${encodeURIComponent(getDeviceId())}`
+          + `&ts=${Date.now()}`
+        );
+    }
+}, 60000);
+
+// IDLE TIMEOUT (7 minutos) con teclado, touch, click y mouse
+let ultimoMovimiento = Date.now();
+["touchstart","click","keydown","mousemove"].forEach(ev => 
+    document.addEventListener(ev, () => ultimoMovimiento = Date.now())
+);
+
+setInterval(async () => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
+            await logout();
+        }
+    }
+}, 60000);
 </script>
+
+<div id="adminEscape"
+     style="position:fixed; bottom:0; right:0; width:60px; height:60px; opacity:0;"
+     onclick="AndroidApp.solicitarPinAdmin()">
+</div>
 
 </body>
 </html>
