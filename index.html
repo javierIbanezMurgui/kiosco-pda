@@ -62,9 +62,6 @@
     .btn-logout {
         background: #dc3545 !important;
     }
-    button:active {
-        transform: scale(0.95);
-    }
     .btn-secondary {
         background: #6c757d !important;
     }
@@ -112,9 +109,15 @@
    CONFIG FASTAPI
 ================================ */
 const API = "http://192.168.2.33:8000";
+const API_PDAS = `${API}/pdas/`;
+const API_USUARIOS = `${API}/usuarios/`;
+const API_LOGIN = `${API}/logs/login`;
+const API_LOGOUT = `${API}/logs/logout`;
+const API_HEARTBEAT = `${API}/logs/heartbeat`;
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
+let LOGOUT_EN_PROCESO = false;
 
 /* ================================
    FUNCIONES AUXILIARES
@@ -138,28 +141,19 @@ async function getCoords(){
     });
 }
 
-function handleImageCapture(input){
-    const file = input.files[0];
-    if (file){
-        const reader = new FileReader();
-        reader.onload = () => alert("Imagen lista: " + file.name);
-        reader.readAsDataURL(file);
-        input.value = "";
-    }
-}
-
 function showError(msg){
     document.getElementById("error").innerText = msg;
     document.getElementById("error").style.display = msg ? "block" : "none";
 }
 
 /* ================================
-   INIT → /pdas/?device=XYZ
+   INIT → /pdas/?device_id=XYZ
 ================================ */
 async function inicializar(){
     try {
-        let device = getDeviceId();
-        let resp = await fetch(`${API}/pdas/?device=${encodeURIComponent(device)}`);
+        const deviceId = getDeviceId();
+
+        let resp = await fetch(`${API_PDAS}?device_id=${encodeURIComponent(deviceId)}`);
         let data = await resp.json();
 
         if (data && data.length > 0) {
@@ -168,11 +162,11 @@ async function inicializar(){
             document.getElementById("loginBtn").disabled = false;
         } else {
             document.getElementById("pdaLabel").innerText = "No registrado";
-            showError("ID: " + device + "\nContacta con el jefe de almacén");
+            showError("ID: " + deviceId + "\nContacta con el jefe de almacén");
         }
     } catch(e){
         document.getElementById("pdaLabel").innerText = "Error conexión";
-        showError("Sin internet");
+        showError("Sin internet o error del servidor");
     }
 }
 
@@ -194,7 +188,7 @@ async function login(){
 
     try {
         // Buscar usuario
-        let respUser = await fetch(`${API}/usuarios/?usuario=${encodeURIComponent(u)}`);
+        let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
         let users = await respUser.json();
 
         if (!users.length){
@@ -209,10 +203,10 @@ async function login(){
             return;
         }
 
-        // Registrar log
+        // Registrar login
         let coords = await getCoords();
 
-        await fetch(`${API}/logs/login`, {
+        await fetch(API_LOGIN, {
             method: "POST",
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -241,6 +235,9 @@ async function login(){
    LOGOUT → /logs/logout
 ================================ */
 async function logout(){
+    if (LOGOUT_EN_PROCESO) return;
+    LOGOUT_EN_PROCESO = true;
+
     if (!USUARIO_ACTUAL || !PDA_NUMERO){
         location.reload();
         return;
@@ -249,7 +246,7 @@ async function logout(){
     let coords = await getCoords();
 
     try {
-        await fetch(`${API}/logs/logout`, {
+        await fetch(API_LOGOUT, {
             method: "POST",
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify({
@@ -271,20 +268,21 @@ async function logout(){
 ================================ */
 setInterval(() => {
     if (USUARIO_ACTUAL && PDA_NUMERO){
-        fetch(`${API}/logs/heartbeat`, {
+        fetch(API_HEARTBEAT, {
             method: "POST",
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify({
                 usuario: USUARIO_ACTUAL,
                 pda: PDA_NUMERO,
                 device: getDeviceId()
-            })
+            }),
+            keepalive: true
         });
     }
-}, 60000);
+}, 30000); // 30 segundos reales
 
 /* ================================
-   IDLE TIMEOUT (7 min)
+   IDLE TIMEOUT (7 minutos)
 ================================ */
 let ultimoMovimiento = Date.now();
 ["touchstart","click","keydown","mousemove"].forEach(ev => 
@@ -297,7 +295,7 @@ setInterval(async () => {
             await logout();
         }
     }
-}, 60000);
+}, 5000); // chequeo preciso cada 5s
 
 window.onload = inicializar;
 </script>
