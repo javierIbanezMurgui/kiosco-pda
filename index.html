@@ -119,6 +119,10 @@ async function inicializar(){
 
         let resp = await fetch(API + "/pdas/");
 
+if (!resp.ok) {
+    throw new Error("HTTP ERROR " + resp.status);
+}
+
         console.log("DESPUÉS FETCH PDAS");
 
         let data = await resp.json();
