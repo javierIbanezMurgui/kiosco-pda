@@ -74,6 +74,7 @@
 
     <h2 id="pdaLabel">Cargando...</h2>
 
+    <!-- LOGIN -->
     <div id="login">
         <input id="usuario" placeholder="Usuario" autocomplete="username">
         <input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
@@ -84,8 +85,43 @@
         <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
             Iniciando sesión...
         </div>
+
+        <!-- BOTÓN ADMIN -->
+        <button class="btn-secondary" onclick="mostrarAdmin()">🛠 Administración</button>
     </div>
 
+    <!-- PANEL ADMIN -->
+    <div id="adminPanel" style="display:none; margin-top:20px;">
+
+        <h3>Administración</h3>
+
+        <button onclick="mostrarFormUsuario()">➕ Crear usuario</button>
+        <button onclick="mostrarFormPda()">📱 Crear PDA</button>
+
+        <!-- FORMULARIO CREAR USUARIO -->
+        <div id="formUsuario" style="display:none; margin-top:15px;">
+            <h4>Crear usuario</h4>
+            <input id="adminUsuario" placeholder="Usuario">
+            <input id="adminPin" placeholder="PIN" type="password">
+            <input id="adminPda" placeholder="Número de PDA">
+            <button onclick="crearUsuario()">Guardar usuario</button>
+        </div>
+
+        <!-- FORMULARIO CREAR PDA -->
+        <div id="formPda" style="display:none; margin-top:15px;">
+            <h4>Crear PDA</h4>
+            <input id="pdaDeviceId" placeholder="Device ID (Android)">
+            <input id="pdaNumero" placeholder="Número de PDA">
+            <input id="pdaDescripcion" placeholder="Descripción (opcional)">
+            <button onclick="crearPda()">Guardar PDA</button>
+        </div>
+
+        <button class="btn-secondary" onclick="cerrarAdmin()">Volver</button>
+
+        <div id="adminMsg" style="margin-top:10px; font-weight:bold;"></div>
+    </div>
+
+    <!-- MENÚ PRINCIPAL -->
     <div id="menu">
 
         <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
@@ -185,7 +221,6 @@ async function login(){
     document.getElementById("loginBtn").disabled = true;
 
     try {
-        // Buscar usuario
         let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
         let users = await respUser.json();
 
@@ -201,7 +236,6 @@ async function login(){
             return;
         }
 
-        // Registrar login
         let coords = await getCoords();
 
         await fetch(API_LOGIN, {
@@ -226,6 +260,110 @@ async function login(){
     } finally {
         document.getElementById("loginBtn").disabled = false;
         document.getElementById("loading").style.display = "none";
+    }
+}
+
+/* ================================
+   ADMIN: MOSTRAR FORMULARIOS
+================================ */
+function mostrarAdmin(){
+    document.getElementById("login").style.display = "none";
+    document.getElementById("adminPanel").style.display = "block";
+    document.getElementById("formUsuario").style.display = "none";
+    document.getElementById("formPda").style.display = "none";
+}
+
+function cerrarAdmin(){
+    document.getElementById("adminPanel").style.display = "none";
+    document.getElementById("login").style.display = "block";
+    document.getElementById("adminMsg").innerText = "";
+}
+
+function mostrarFormUsuario(){
+    document.getElementById("formUsuario").style.display = "block";
+    document.getElementById("formPda").style.display = "none";
+}
+
+function mostrarFormPda(){
+    document.getElementById("formUsuario").style.display = "none";
+    document.getElementById("formPda").style.display = "block";
+}
+
+/* ================================
+   ADMIN: CREAR USUARIO
+================================ */
+async function crearUsuario(){
+    const usuario = document.getElementById("adminUsuario").value.trim();
+    const pin = document.getElementById("adminPin").value.trim();
+    const numPDA = document.getElementById("adminPda").value.trim();
+
+    if (!usuario || !pin){
+        document.getElementById("adminMsg").innerText = "Usuario y PIN son obligatorios";
+        return;
+    }
+
+    const body = {
+        usuario: usuario,
+        pin: pin,
+        numPDA: numPDA ? Number(numPDA) : null
+    };
+
+    try {
+        let resp = await fetch(`${API}/usuarios/`, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(body)
+        });
+
+        if (resp.ok){
+            document.getElementById("adminMsg").innerText = "Usuario creado correctamente";
+            document.getElementById("adminUsuario").value = "";
+            document.getElementById("adminPin").value = "";
+            document.getElementById("adminPda").value = "";
+        } else {
+            document.getElementById("adminMsg").innerText = "Error al crear usuario";
+        }
+    } catch(e){
+        document.getElementById("adminMsg").innerText = "Error de conexión con el servidor";
+    }
+}
+
+/* ================================
+   ADMIN: CREAR PDA
+================================ */
+async function crearPda(){
+    const deviceId = document.getElementById("pdaDeviceId").value.trim();
+    const numPDA = document.getElementById("pdaNumero").value.trim();
+    const descripcion = document.getElementById("pdaDescripcion").value.trim();
+
+    if (!deviceId || !numPDA){
+        document.getElementById("adminMsg").innerText = "Device ID y número de PDA son obligatorios";
+        return;
+    }
+
+    const body = {
+        id: deviceId,
+        numPDA: Number(numPDA),
+        descripcion: descripcion || ""
+    };
+
+    try {
+        let resp = await fetch(`${API}/pdas/`, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(body)
+        });
+
+        if (resp.ok){
+            document.getElementById("adminMsg").innerText = "PDA creada correctamente";
+            document.getElementById("pdaDeviceId").value = "";
+            document.getElementById("pdaNumero").value = "";
+            document.getElementById("pdaDescripcion").value = "";
+        } else {
+            document.getElementById("adminMsg").innerText = "Error al crear PDA";
+        }
+    } catch(e){
+        document.getElementById("adminMsg").innerText = "Error de conexión con el servidor";
     }
 }
 
