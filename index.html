@@ -2,74 +2,47 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>PDA DEBUG AZA</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema PDA Aza</title>
 <style>
-body {
-    font-family: Arial;
-    background: #f2f2f2;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-}
-
-.card {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 350px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-button {
-    width: 100%;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 16px;
-    font-weight: bold;
-    background: #007bff;
-    color: white;
-}
-
+body { font-family: Arial; background:#f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+.card { background:white; padding:30px; border-radius:10px; width:90%; max-width:350px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.2); }
+input,button,label { width:100%; padding:15px; margin:10px 0; border-radius:5px; border:1px solid #ccc; font-size:16px; display:block; box-sizing:border-box; }
+button { background:#007bff; color:white; border:none; font-weight:bold; }
+button:disabled { background:#ccc; }
+.btn-secondary { background:#6c757d; color:white; }
+.btn-logout { background:#dc3545 !important; }
+#error { color:#dc3545; font-weight:bold; display:none; white-space:pre-line; }
 #menu { display:none; }
-
-#error {
-    color:red;
-    white-space:pre-line;
-    margin-top:10px;
-}
 </style>
 </head>
-
 <body>
 
 <div class="card">
+<h2 id="pdaLabel">Cargando...</h2>
 
-<h2 id="pdaLabel">DEBUG MODE</h2>
-
-<div id="login" style="display:none;">
-    <p>Modo debug activo</p>
+<div id="login">
+<input id="usuario" placeholder="Usuario">
+<input id="pin" type="password" placeholder="PIN">
+<button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
+<div id="error"></div>
 </div>
 
 <div id="menu">
+<button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
+<button onclick="abrirApp('es.tlsi.whales.android')">📦 Whales</button>
+<button onclick="abrirApp('com.datalogic.scan2deploy')">📦 Scan2Deploy</button>
+<button onclick="abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+<button onclick="abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
-    <button onclick="testAPI()">🔍 TEST API</button>
+<label class="btn-secondary">
+📷 Cámara / Galería
+<input type="file" accept="image/*" capture="environment" onchange="handleImage(this)" hidden>
+</label>
 
-    <button onclick="abrirApp('es.tlsi.whales.android')">Whales</button>
-    <button onclick="abrirApp('com.datalogic.scan2deploy')">Scan2Deploy</button>
-    <button onclick="abrirApp('com.azalogistics.aza_scanner')">Scanner</button>
-    <button onclick="abrirApp('es.tlsi.mobile')">Whales nuevo</button>
+<button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
 
-    <button onclick="logout()">Cerrar sesión</button>
-
-    <div id="error"></div>
+<button class="btn-logout" onclick="logout()">Cerrar sesión</button>
 </div>
 
 </div>
@@ -77,82 +50,152 @@ button {
 <script>
 
 const API = "http://192.168.2.33:8000";
+let USUARIO_ACTUAL = null;
+let PDA_NUMERO = null;
 
-let USUARIO_ACTUAL = "DEBUG";
+function getDeviceId(){
+    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId){
+        try { return AndroidApp.getPdaId(); } catch(e){}
+    }
+    return "TEST_PC";
+}
 
-/* INIT (HEALTH EN POST) */
+function showError(msg){
+    const el = document.getElementById("error");
+    el.innerText = msg;
+    el.style.display = msg ? "block" : "none";
+}
+
+async function getCoords(){
+    return new Promise(resolve=>{
+        navigator.geolocation.getCurrentPosition(
+            p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
+            ()=>resolve({lat:0,lng:0}),
+            {timeout:5000}
+        );
+    });
+}
+
+function handleImage(input){
+    const file = input.files[0];
+    if (file){
+        alert("Imagen capturada: " + file.name);
+        input.value = "";
+    }
+}
+
+// INIT
 async function inicializar(){
-    console.log("Iniciando debug...");
-
     try {
+        let resp = await fetch(`${API}/pdas/`);
+        let data = await resp.json();
 
-        // 🔥 HEALTH AHORA EN POST
-        let resp = await fetch(API + "/health", {
-            method: "POST"
-        });
+        let device = getDeviceId();
+        let encontrado = data.find(d=>d.device===device);
 
-        if (!resp.ok) {
-            throw new Error("HTTP " + resp.status);
+        if (encontrado){
+            PDA_NUMERO = encontrado.numeroPda;
+            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+            document.getElementById("loginBtn").disabled = false;
+        } else {
+            showError("Dispositivo no registrado");
         }
 
-        let text = await resp.text();
-
-        console.log("HEALTH:", text);
-
-        document.getElementById("menu").style.display = "block";
-
     } catch(e){
-        console.error("ERROR HEALTH:", e);
-        showError("Sin conexión con API\n" + e.message);
-        document.getElementById("menu").style.display = "block";
+        showError("Error conexión API");
     }
 }
 
-/* TEST API */
-async function testAPI(){
+// LOGIN
+async function login(){
+    let u = document.getElementById("usuario").value.trim();
+    let p = document.getElementById("pin").value;
+
+    if (!u || !p){
+        showError("Complete todos los campos");
+        return;
+    }
 
     try {
-        let pdas = await fetch(API + "/pdas/");
-        let users = await fetch(API + "/usuarios/");
-        let asign = await fetch(API + "/asignaciones/");
+        let resp = await fetch(`${API}/usuarios/?usuario=${u}`);
+        let users = await resp.json();
 
-        let p = await pdas.json();
-        let u = await users.json();
-        let a = await asign.json();
+        if (!users.length || users[0].pin != p){
+            showError("Usuario o PIN incorrecto");
+            return;
+        }
 
-        console.log("PDAS:", p);
-        console.log("USUARIOS:", u);
-        console.log("ASIGNACIONES:", a);
+        if (String(users[0].numPDA) !== String(PDA_NUMERO)){
+            showError("No es tu PDA");
+            return;
+        }
 
-        showError(
-            "PDAS: " + JSON.stringify(p) + "\n\n" +
-            "USUARIOS: " + JSON.stringify(u) + "\n\n" +
-            "ASIGNACIONES: " + JSON.stringify(a)
-        );
+        let coords = await getCoords();
+
+        await fetch(`${API}/logs/login`,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                usuario:u,
+                pda:PDA_NUMERO,
+                device:getDeviceId(),
+                lat:coords.lat,
+                lng:coords.lng
+            })
+        });
+
+        USUARIO_ACTUAL = u;
+        document.getElementById("login").style.display="none";
+        document.getElementById("menu").style.display="block";
 
     } catch(e){
-        showError("Error API TEST:\n" + e.message);
+        showError("Error conexión API");
     }
 }
 
-/* ERROR */
-function showError(msg){
-    document.getElementById("error").innerText = msg;
-}
+// LOGOUT
+async function logout(){
+    if (!USUARIO_ACTUAL) return;
 
-/* LOGOUT */
-function logout(){
+    let coords = await getCoords();
+
+    try {
+        await fetch(`${API}/logs/logout`,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                usuario:USUARIO_ACTUAL,
+                pda:PDA_NUMERO,
+                device:getDeviceId(),
+                lat:coords.lat,
+                lng:coords.lng
+            })
+        });
+    } catch(e){}
+
     location.reload();
 }
 
-/* APPS */
+// HEARTBEAT
+setInterval(()=>{
+    if (USUARIO_ACTUAL){
+        fetch(`${API}/logs/heartbeat`,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                usuario:USUARIO_ACTUAL,
+                pda:PDA_NUMERO,
+                device:getDeviceId()
+            })
+        });
+    }
+},60000);
+
 function abrirApp(pkg){
     if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
-        try { AndroidApp.abrirApp(pkg); return; }
-        catch(e){}
+        try { AndroidApp.abrirApp(pkg); return; } catch(e){}
     }
-
-    window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
+    window.location.href = `intent:#Intent;package=${pkg};end;`;
 }
 
 window.onload = inicializar;
