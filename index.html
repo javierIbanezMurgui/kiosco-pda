@@ -250,19 +250,15 @@ async function logout(){
 }
 
 /* ================= HEARTBEAT ================= */
-setInterval(()=>{
+setInterval(() => {
     if (USUARIO_ACTUAL){
-        fetch(API + "/logs/heartbeat", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({
-                usuario: USUARIO_ACTUAL,
-                pda: PDA_NUMERO,
-                device: getDeviceId()
-            })
-        });
+        const url = `${API}/logs/heartbeat?usuario=${encodeURIComponent(USUARIO_ACTUAL)}&pda=${encodeURIComponent(PDA_NUMERO)}&device=${encodeURIComponent(getDeviceId())}`;
+
+        fetch(url, {
+            method: "GET"
+        }).catch(() => {});
     }
-},120000);
+}, 120000);
 
 /* ================= IDLE LOGOUT ================= */
 let ultimoMovimiento = Date.now();
