@@ -2,193 +2,239 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Sistema PDA Aza</title>
 
 <style>
-body { font-family: Arial; background:#f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;}
-.card { background:white; padding:20px; border-radius:10px; width:95%; max-width:400px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.2);}
-input, button { width:100%; padding:10px; margin:5px 0; border-radius:5px;}
-button { background:#007bff; color:white; border:none;}
-.btn-logout { background:#dc3545;}
-.btn-admin { background:#6c757d;}
-#menu, #adminPanel { display:none;}
+    body { font-family: Arial; background: #f2f2f2; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .card { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+    button { background: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    #menu, #error { display: none; margin-top: 20px; }
+    #error { color: #dc3545; font-weight: bold; white-space: pre-line; }
+    .logo-img { max-width: 150px; height: auto; margin-bottom: 20px; }
+    .btn-logout { background: #dc3545 !important; }
+    .btn-secondary { background: #6c757d !important; }
 </style>
 </head>
-
 <body>
+
 <div class="card">
+    <img src="aza-logistics.png" class="logo-img" alt="Aza Logistics" onerror="this.style.display='none'">
 
-<h2 id="pdaLabel">Cargando...</h2>
+    <h2 id="pdaLabel">Cargando...</h2>
 
-<div id="login">
-<input id="usuario" placeholder="Usuario">
-<input id="pin" type="password" placeholder="PIN">
-<button onclick="login()">Login</button>
-<p id="error"></p>
-</div>
+    <div id="login">
+        <input id="usuario" placeholder="Usuario" autocomplete="username">
+        <input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
+        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
 
-<div id="menu">
-<button onclick="abrirAdmin()">⚙️ Admin</button>
-<button onclick="logout()" class="btn-logout">Cerrar sesión</button>
-</div>
+        <div id="error"></div>
 
-<!-- PANEL ADMIN -->
-<div id="adminPanel">
+        <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
+            Iniciando sesión...
+        </div>
+    </div>
 
-<h3>🟢 API</h3>
-<button onclick="checkHealth()">Check API</button>
+    <div id="menu">
 
-<h3>📱 PDAs</h3>
-<button onclick="listarPDAs()">Listar</button>
-<input id="newPDA" placeholder="numPDA">
-<button onclick="crearPDA()">Crear</button>
+        <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
 
-<h3>👤 Usuarios</h3>
-<button onclick="listarUsuarios()">Listar</button>
-<input id="newUser" placeholder="usuario">
-<input id="newPin" placeholder="pin">
-<button onclick="crearUsuario()">Crear</button>
+        <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
+        <button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
+        <button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+        <button onclick="AndroidApp.abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
-<h3>📋 Asignaciones</h3>
-<button onclick="verAsignaciones()">Ver</button>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(this)">
+        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galeria</button>
 
-<button onclick="cerrarAdmin()" class="btn-admin">Cerrar panel</button>
+        <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
 
-</div>
-
+        <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
 </div>
 
 <script>
-const API = "http://192.168.2.33:8000";
-const API_PDAS = `${API}/pdas/`;
-const API_USUARIOS = `${API}/usuarios/`;
+const API = "https://tu-servidor.local/api";
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
-let ASIGNACION_ID = null;
 
-/* INIT */
+/* ------------------------------
+   OBTENER ID DEL DISPOSITIVO
+--------------------------------*/
+function getDeviceId(){
+    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
+        try { return AndroidApp.getPdaId(); }
+        catch(e) { return "WEB_ERROR"; }
+    }
+    return "TEST_PC";
+}
+
+/* ------------------------------
+   GEOLOCALIZACIÓN
+--------------------------------*/
+async function getCoords(){
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve({lat:0,lng:0});
+        navigator.geolocation.getCurrentPosition(
+            p => resolve({lat:p.coords.latitude, lng:p.coords.longitude}),
+            () => resolve({lat:0,lng:0}),
+            {timeout:5000, enableHighAccuracy:true}
+        );
+    });
+}
+
+/* ------------------------------
+   CARGAR PDA DESDE API PRIVADA
+--------------------------------*/
 async function inicializar(){
-    try{
-        let id="TEST_PC";
-        let r = await fetch(`${API_PDAS}${id}`);
-        let data = await r.json();
-        PDA_NUMERO = data.numPDA;
-        document.getElementById("pdaLabel").innerText="PDA "+PDA_NUMERO;
-    }catch{
-        document.getElementById("pdaLabel").innerText="No registrada";
+    try {
+        let resp = await fetch(`${API}/pdas/?device=${encodeURIComponent(getDeviceId())}`);
+        let data = await resp.json();
+
+        if (data && data.id){
+            PDA_NUMERO = data.id;
+            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+            document.getElementById("loginBtn").disabled = false;
+        } else {
+            document.getElementById("pdaLabel").innerText = "No registrado";
+            showError("ID: " + getDeviceId() + "\nContacta con el jefe de almacén");
+        }
+    } catch(e){
+        document.getElementById("pdaLabel").innerText = "Error conexión";
+        showError("Sin internet");
     }
 }
 
-/* LOGIN */
+/* ------------------------------
+   LOGIN REAL USANDO TU API
+--------------------------------*/
 async function login(){
-    let u = usuario.value;
-    let p = pin.value;
+    let u = document.getElementById("usuario").value.trim();
+    let p = document.getElementById("pin").value;
 
-    let r = await fetch(`${API_USUARIOS}?usuario=${u}`);
-    let users = await r.json();
-
-    if(!users.length || users[0].pin != p){
-        error.innerText="Error login";
+    if (!u || !p){
+        showError("Complete todos los campos");
         return;
     }
 
-    USUARIO_ACTUAL = u;
+    showError("");
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("loginBtn").disabled = true;
 
-    // Crear asignación
-    let a = await fetch(`${API}/asignaciones/`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({user:u, numPDA:PDA_NUMERO})
-    });
-    let asignacion = await a.json();
-    ASIGNACION_ID = asignacion.id;
+    try {
+        // 1) Validar usuario
+        let resp = await fetch(`${API}/usuarios/?usuario=${encodeURIComponent(u)}`);
+        let users = await resp.json();
 
-    // Log login
-    fetch(`${API}/logs/login`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({usuario:u,pda:PDA_NUMERO,device:"WEB"})
-    });
+        let user = users.find(x => x.usuario === u && x.pin == p);
 
-    login.style.display="none";
-    menu.style.display="block";
+        if (!user){
+            showError("Usuario o PIN incorrecto");
+            return;
+        }
+
+        USUARIO_ACTUAL = u;
+
+        // 2) Registrar asignación
+        let coords = await getCoords();
+
+        await fetch(`${API}/asignaciones/`, {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                usuario:u,
+                numPDA:PDA_NUMERO,
+                fecha:new Date().toISOString(),
+                lat:coords.lat,
+                lng:coords.lng
+            })
+        });
+
+        // 3) Registrar log login
+        await fetch(`${API}/logs/login`, {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                usuario:u,
+                pda:PDA_NUMERO,
+                device:getDeviceId(),
+                lat:coords.lat,
+                lng:coords.lng
+            })
+        });
+
+        document.getElementById("login").style.display = "none";
+        document.getElementById("menu").style.display = "block";
+
+    } catch(e){
+        showError("Error de conexión");
+    } finally {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("loginBtn").disabled = false;
+    }
 }
 
-/* LOGOUT */
+/* ------------------------------
+   LOGOUT REAL
+--------------------------------*/
 async function logout(){
+    if (!USUARIO_ACTUAL) return location.reload();
 
-    if(ASIGNACION_ID){
-        await fetch(`${API}/asignaciones/${ASIGNACION_ID}`,{
-            method:"PUT",
+    let coords = await getCoords();
+
+    try {
+        await fetch(`${API}/logs/logout`, {
+            method:"POST",
             headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({activa:false})
+            body:JSON.stringify({
+                usuario:USUARIO_ACTUAL,
+                pda:PDA_NUMERO,
+                device:getDeviceId(),
+                lat:coords.lat,
+                lng:coords.lng
+            })
         });
-    }
+    } catch(e){}
 
-    await fetch(`${API}/logs/logout`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({usuario:USUARIO_ACTUAL,pda:PDA_NUMERO})
-    });
-
+    USUARIO_ACTUAL = null;
     location.reload();
 }
 
-/* ADMIN PANEL */
-function abrirAdmin(){ adminPanel.style.display="block"; }
-function cerrarAdmin(){ adminPanel.style.display="none"; }
+/* ------------------------------
+   HEARTBEAT REAL
+--------------------------------*/
+setInterval(async () => {
+    if (!USUARIO_ACTUAL) return;
 
-/* HEALTH */
-async function checkHealth(){
-    try{
-        await fetch(`${API}/health`);
-        alert("API OK");
-    }catch{
-        alert("API caída");
-    }
-}
-
-/* PDAs */
-async function listarPDAs(){
-    let r=await fetch(API_PDAS);
-    console.log(await r.json());
-}
-
-async function crearPDA(){
-    let num=newPDA.value;
-    await fetch(API_PDAS,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({numPDA:num})
-    });
-}
-
-/* USUARIOS */
-async function listarUsuarios(){
-    let r=await fetch(API_USUARIOS);
-    console.log(await r.json());
-}
-
-async function crearUsuario(){
-    await fetch(API_USUARIOS,{
+    await fetch(`${API}/logs/heartbeat`, {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-            usuario:newUser.value,
-            pin:newPin.value
+            usuario:USUARIO_ACTUAL,
+            pda:PDA_NUMERO,
+            device:getDeviceId()
         })
     });
-}
+}, 60000);
 
-/* ASIGNACIONES */
-async function verAsignaciones(){
-    let r=await fetch(`${API}/asignaciones/`);
-    console.log(await r.json());
-}
+/* ------------------------------
+   TIMEOUT 7 MIN
+--------------------------------*/
+let ultimoMovimiento = Date.now();
+["touchstart","click","keydown","mousemove"].forEach(ev => 
+    document.addEventListener(ev, () => ultimoMovimiento = Date.now())
+);
 
-window.onload=inicializar;
+setInterval(async () => {
+    if (USUARIO_ACTUAL && Date.now() - ultimoMovimiento > 7 * 60 * 1000){
+        await logout();
+    }
+}, 60000);
+
+window.onload = inicializar;
 </script>
 
 </body>
