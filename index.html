@@ -62,13 +62,14 @@
 const API = "http://192.168.2.33:8000";
 const API_PDAS = `${API}/pdas/`;
 const API_USUARIOS = `${API}/usuarios/`;
+const API_ASIG = `${API}/asignaciones/`;
 const API_LOGIN = `${API}/logs/login`;
 const API_LOGOUT = `${API}/logs/logout`;
 const API_HEARTBEAT = `${API}/logs/heartbeat`;
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
-let LOGOUT_EN_PROCESO = false;
+let ASIGNACION_ID = null;
 
 /* ================================
    FUNCIONES AUXILIARES
@@ -120,13 +121,13 @@ async function inicializar(){
 }
 
 /* ================================
-   LOGIN → /usuarios/ + /logs/login
+   LOGIN COMPLETO CON ASIGNACIONES
 ================================ */
 async function login(){
     let u = document.getElementById("usuario").value.trim();
     let p = document.getElementById("pin").value;
 
-    if (!u || !p || !PDA_NUMERO){
+    if (!u || !p){
         showError("Complete todos los campos");
         return;
     }
@@ -136,7 +137,9 @@ async function login(){
     document.getElementById("loginBtn").disabled = true;
 
     try {
-        // Buscar usuario
+        /* ============================
+           1. VALIDAR USUARIO
+        ============================ */
         let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
         let users = await respUser.json();
 
@@ -152,7 +155,59 @@ async function login(){
             return;
         }
 
-        // Registrar login
+        /* ============================
+           2. VALIDAR SI EL USUARIO YA TIENE PDA
+        ============================ */
+        let respAsignUser = await fetch(`${API_ASIG}?user=${encodeURIComponent(u)}`);
+        let asignUser = await respAsignUser.json();
+
+        let activaUser = asignUser.find(a => !a.fechaFin);
+
+        if (activaUser && activaUser.numPDA !== PDA_NUMERO){
+            showError(`Ya tienes asignada la PDA ${activaUser.numPDA}`);
+            return;
+        }
+
+        /* ============================
+           3. VALIDAR SI LA PDA ESTÁ OCUPADA
+        ============================ */
+        let respAsignPda = await fetch(`${API_ASIG}?numPDA=${PDA_NUMERO}`);
+        let asignPda = await respAsignPda.json();
+
+        let activaPda = asignPda.find(a => !a.fechaFin);
+
+        if (activaPda && activaPda.usuario !== u){
+            showError(`Esta PDA está asignada a ${activaPda.usuario}`);
+            return;
+        }
+
+        /* ============================
+           4. CREAR ASIGNACIÓN SI NO EXISTE
+        ============================ */
+        if (!activaUser && !activaPda){
+            let coords = await getCoords();
+
+            let nueva = await fetch(API_ASIG, {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({
+                    usuario:u,
+                    numPDA:PDA_NUMERO,
+                    fechaInicio:new Date().toISOString(),
+                    lat:coords.lat,
+                    lng:coords.lng
+                })
+            });
+
+            let data = await nueva.json();
+            ASIGNACION_ID = data.id;
+        } else {
+            ASIGNACION_ID = activaUser?.id || activaPda?.id;
+        }
+
+        /* ============================
+           5. LOG LOGIN
+        ============================ */
         let coords = await getCoords();
 
         await fetch(API_LOGIN, {
@@ -168,33 +223,45 @@ async function login(){
         });
 
         USUARIO_ACTUAL = u;
+
         document.getElementById("login").style.display = "none";
         document.getElementById("menu").style.display = "block";
-        document.getElementById("pin").value = "";
 
     } catch(e){
         showError("Error de conexión");
     } finally {
-        document.getElementById("loginBtn").disabled = false;
         document.getElementById("loading").style.display = "none";
+        document.getElementById("loginBtn").disabled = false;
     }
 }
 
 /* ================================
-   LOGOUT → /logs/logout
+   LOGOUT COMPLETO
 ================================ */
 async function logout(){
-    if (LOGOUT_EN_PROCESO) return;
-    LOGOUT_EN_PROCESO = true;
-
-    if (!USUARIO_ACTUAL || !PDA_NUMERO){
-        location.reload();
-        return;
-    }
+    if (!USUARIO_ACTUAL) return location.reload();
 
     let coords = await getCoords();
 
     try {
+        /* ============================
+           1. CERRAR ASIGNACIÓN
+        ============================ */
+        if (ASIGNACION_ID){
+            await fetch(`${API_ASIG}${ASIGNACION_ID}`, {
+                method:"PUT",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({
+                    fechaFin:new Date().toISOString(),
+                    lat:coords.lat,
+                    lng:coords.lng
+                })
+            });
+        }
+
+        /* ============================
+           2. LOG LOGOUT
+        ============================ */
         await fetch(API_LOGOUT, {
             method: "POST",
             headers: {"Content-Type":"application/json"},
@@ -206,14 +273,16 @@ async function logout(){
                 lng: coords.lng
             })
         });
+
     } catch(e){}
 
     USUARIO_ACTUAL = null;
+    ASIGNACION_ID = null;
     location.reload();
 }
 
 /* ================================
-   HEARTBEAT → /logs/heartbeat
+   HEARTBEAT
 ================================ */
 setInterval(() => {
     if (USUARIO_ACTUAL && PDA_NUMERO){
@@ -231,7 +300,7 @@ setInterval(() => {
 }, 30000);
 
 /* ================================
-   IDLE TIMEOUT (7 minutos)
+   TIMEOUT 7 MIN
 ================================ */
 let ultimoMovimiento = Date.now();
 ["touchstart","click","keydown","mousemove"].forEach(ev => 
@@ -239,10 +308,8 @@ let ultimoMovimiento = Date.now();
 );
 
 setInterval(async () => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
-        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
-            await logout();
-        }
+    if (USUARIO_ACTUAL && Date.now() - ultimoMovimiento > 7 * 60 * 1000){
+        await logout();
     }
 }, 5000);
 
