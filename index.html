@@ -172,18 +172,18 @@ async function inicializar(){
         document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
         document.getElementById("loginBtn").disabled = false;
 
-catch(e){
-    console.error(e);
+    } catch(e){
+        console.error(e);
 
-    document.getElementById("pdaLabel").innerText = "No registrado";
+        document.getElementById("pdaLabel").innerText = "No registrado";
 
-    document.getElementById("loginBtn").disabled = true;
+        document.getElementById("loginBtn").disabled = true;
 
-    showError(
-        "ID: " + getDeviceId() +
-        "\nContacta con el jefe de almacén"
-    );
-}
+        showError(
+            "ID: " + getDeviceId() +
+            "\nContacta con el jefe de almacén"
+        );
+    }
 }
 
 /* ================================
