@@ -6,29 +6,64 @@
 <title>Sistema PDA Aza</title>
 
 <style>
-    body { font-family: Arial; background: #f2f2f2; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    .card { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
-    button { background: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    #menu, #error { display: none; margin-top: 20px; }
-    #error { color: #dc3545; font-weight: bold; white-space: pre-line; }
-    .logo-img { max-width: 150px; height: auto; margin-bottom: 20px; }
-    .btn-logout { background: #dc3545 !important; }
-    .btn-secondary { background: #6c757d !important; }
-
-    /* PANEL DIAGNÓSTICO */
-    #debugBox {
-        margin-top: 20px;
-        padding: 10px;
-        background: #eee;
-        border-radius: 8px;
-        font-size: 12px;
-        text-align: left;
-        max-height: 200px;
-        overflow-y: auto;
-        display: block;
+    body { 
+        font-family: Arial; 
+        background: #f2f2f2; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        margin: 0; 
+    }
+    .card { 
+        background: white; 
+        padding: 30px; 
+        border-radius: 10px; 
+        width: 90%; 
+        max-width: 350px; 
+        text-align: center; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+    }
+    input, button { 
+        width: 100%; 
+        padding: 15px; 
+        margin: 10px 0; 
+        border-radius: 5px; 
+        border: 1px solid #ccc; 
+        box-sizing: border-box; 
+        font-size: 16px;
+    }
+    button { 
+        background: #007bff; 
+        color: white; 
+        border: none; 
+        font-size: 16px; 
+        font-weight: bold; 
+        cursor: pointer;
+    }
+    button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    #menu, #error { 
+        display: none; 
+        margin-top: 20px; 
+    }
+    #error {
+        color: #dc3545;
+        font-weight: bold;
         white-space: pre-line;
+    }
+    .logo-img {
+        max-width: 150px;
+        height: auto;
+        margin-bottom: 20px;
+    }
+    .btn-logout {
+        background: #dc3545 !important;
+    }
+    .btn-secondary {
+        background: #6c757d !important;
     }
 </style>
 </head>
@@ -45,13 +80,16 @@
         <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
 
         <div id="error"></div>
+
         <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
             Iniciando sesión...
         </div>
     </div>
 
     <div id="menu">
+
         <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
+
         <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
         <button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
         <button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
@@ -64,10 +102,6 @@
 
         <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
     </div>
-
-    <!-- PANEL DIAGNÓSTICO -->
-    <div id="debugBox"></div>
-
 </div>
 
 <script>
@@ -77,33 +111,23 @@
 const API = "http://192.168.2.33:8000";
 const API_PDAS = `${API}/pdas/`;
 const API_USUARIOS = `${API}/usuarios/`;
-const API_ASIG = `${API}/asignaciones/`;
 const API_LOGIN = `${API}/logs/login`;
 const API_LOGOUT = `${API}/logs/logout`;
 const API_HEARTBEAT = `${API}/logs/heartbeat`;
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
-let ASIGNACION_ID = null;
-
-/* ================================
-   DEBUG
-================================ */
-function debug(msg){
-    document.getElementById("debugBox").innerText += msg + "\n";
-}
+let LOGOUT_EN_PROCESO = false;
 
 /* ================================
    FUNCIONES AUXILIARES
 ================================ */
 function getDeviceId(){
-    let id = "TEST_PC";
     if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
-        try { id = AndroidApp.getPdaId(); }
-        catch(e) { id = "WEB_ERROR"; }
+        try { return AndroidApp.getPdaId(); }
+        catch(e) { return "WEB_ERROR"; }
     }
-    debug("Device ID detectado: " + id);
-    return id;
+    return "TEST_PC";
 }
 
 async function getCoords(){
@@ -120,7 +144,6 @@ async function getCoords(){
 function showError(msg){
     document.getElementById("error").innerText = msg;
     document.getElementById("error").style.display = msg ? "block" : "none";
-    debug("ERROR: " + msg);
 }
 
 /* ================================
@@ -129,19 +152,11 @@ function showError(msg){
 async function inicializar(){
     try {
         const deviceId = getDeviceId();
-        const url = `${API_PDAS}${deviceId}`;
-        debug("Llamando a: " + url);
 
-        let resp = await fetch(url);
-        debug("Status: " + resp.status);
-
-        if (!resp.ok){
-            debug("Respuesta API: " + await resp.text());
-            throw new Error("No existe PDA");
-        }
+        let resp = await fetch(`${API_PDAS}${deviceId}`);
+        if (!resp.ok) throw new Error("No existe PDA");
 
         let data = await resp.json();
-        debug("Respuesta JSON: " + JSON.stringify(data));
 
         PDA_NUMERO = data.numPDA;
         document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
@@ -154,15 +169,13 @@ async function inicializar(){
 }
 
 /* ================================
-   LOGIN COMPLETO
+   LOGIN → /usuarios/ + /logs/login
 ================================ */
 async function login(){
     let u = document.getElementById("usuario").value.trim();
     let p = document.getElementById("pin").value;
 
-    debug("Intento login usuario: " + u);
-
-    if (!u || !p){
+    if (!u || !p || !PDA_NUMERO){
         showError("Complete todos los campos");
         return;
     }
@@ -172,13 +185,9 @@ async function login(){
     document.getElementById("loginBtn").disabled = true;
 
     try {
-        /* VALIDAR USUARIO */
-        let urlUser = `${API_USUARIOS}?usuario=${encodeURIComponent(u)}`;
-        debug("Validando usuario con: " + urlUser);
-
-        let respUser = await fetch(urlUser);
+        // Buscar usuario
+        let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
         let users = await respUser.json();
-        debug("Respuesta usuarios: " + JSON.stringify(users));
 
         if (!users.length){
             showError("Usuario no encontrado");
@@ -192,64 +201,8 @@ async function login(){
             return;
         }
 
-        /* VALIDAR ASIGNACIÓN POR USUARIO */
-        let urlAsignUser = `${API_ASIG}?user=${encodeURIComponent(u)}`;
-        debug("Asignaciones por usuario: " + urlAsignUser);
-
-        let asignUser = await (await fetch(urlAsignUser)).json();
-        debug("Respuesta asignUser: " + JSON.stringify(asignUser));
-
-        let activaUser = asignUser.find(a => !a.fechaFin);
-
-        if (activaUser && activaUser.numPDA !== PDA_NUMERO){
-            showError(`Ya tienes asignada la PDA ${activaUser.numPDA}`);
-            return;
-        }
-
-        /* VALIDAR ASIGNACIÓN POR PDA */
-        let urlAsignPda = `${API_ASIG}?numPDA=${PDA_NUMERO}`;
-        debug("Asignaciones por PDA: " + urlAsignPda);
-
-        let asignPda = await (await fetch(urlAsignPda)).json();
-        debug("Respuesta asignPda: " + JSON.stringify(asignPda));
-
-        let activaPda = asignPda.find(a => !a.fechaFin);
-
-        if (activaPda && activaPda.usuario !== u){
-            showError(`Esta PDA está asignada a ${activaPda.usuario}`);
-            return;
-        }
-
-        /* CREAR ASIGNACIÓN */
-        if (!activaUser && !activaPda){
-            let coords = await getCoords();
-
-            debug("Creando asignación...");
-
-            let nueva = await fetch(API_ASIG, {
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({
-                    usuario:u,
-                    numPDA:PDA_NUMERO,
-                    fechaInicio:new Date().toISOString(),
-                    lat:coords.lat,
-                    lng:coords.lng
-                })
-            });
-
-            let data = await nueva.json();
-            debug("Asignación creada: " + JSON.stringify(data));
-
-            ASIGNACION_ID = data.id;
-        } else {
-            ASIGNACION_ID = activaUser?.id || activaPda?.id;
-            debug("Asignación existente ID: " + ASIGNACION_ID);
-        }
-
-        /* LOG LOGIN */
+        // Registrar login
         let coords = await getCoords();
-        debug("Registrando login...");
 
         await fetch(API_LOGIN, {
             method: "POST",
@@ -264,43 +217,33 @@ async function login(){
         });
 
         USUARIO_ACTUAL = u;
-
         document.getElementById("login").style.display = "none";
         document.getElementById("menu").style.display = "block";
+        document.getElementById("pin").value = "";
 
     } catch(e){
         showError("Error de conexión");
-        debug("EXCEPCIÓN: " + e);
     } finally {
-        document.getElementById("loading").style.display = "none";
         document.getElementById("loginBtn").disabled = false;
+        document.getElementById("loading").style.display = "none";
     }
 }
 
 /* ================================
-   LOGOUT
+   LOGOUT → /logs/logout
 ================================ */
 async function logout(){
-    if (!USUARIO_ACTUAL) return location.reload();
+    if (LOGOUT_EN_PROCESO) return;
+    LOGOUT_EN_PROCESO = true;
+
+    if (!USUARIO_ACTUAL || !PDA_NUMERO){
+        location.reload();
+        return;
+    }
 
     let coords = await getCoords();
-    debug("Cerrando sesión...");
 
     try {
-        if (ASIGNACION_ID){
-            debug("Cerrando asignación ID: " + ASIGNACION_ID);
-
-            await fetch(`${API_ASIG}${ASIGNACION_ID}`, {
-                method:"PUT",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({
-                    fechaFin:new Date().toISOString(),
-                    lat:coords.lat,
-                    lng:coords.lng
-                })
-            });
-        }
-
         await fetch(API_LOGOUT, {
             method: "POST",
             headers: {"Content-Type":"application/json"},
@@ -312,22 +255,17 @@ async function logout(){
                 lng: coords.lng
             })
         });
-
-    } catch(e){
-        debug("Error logout: " + e);
-    }
+    } catch(e){}
 
     USUARIO_ACTUAL = null;
-    ASIGNACION_ID = null;
     location.reload();
 }
 
 /* ================================
-   HEARTBEAT
+   HEARTBEAT → /logs/heartbeat
 ================================ */
 setInterval(() => {
     if (USUARIO_ACTUAL && PDA_NUMERO){
-        debug("Heartbeat enviado");
         fetch(API_HEARTBEAT, {
             method: "POST",
             headers: {"Content-Type":"application/json"},
@@ -342,7 +280,7 @@ setInterval(() => {
 }, 30000);
 
 /* ================================
-   TIMEOUT
+   IDLE TIMEOUT (7 minutos)
 ================================ */
 let ultimoMovimiento = Date.now();
 ["touchstart","click","keydown","mousemove"].forEach(ev => 
@@ -350,14 +288,20 @@ let ultimoMovimiento = Date.now();
 );
 
 setInterval(async () => {
-    if (USUARIO_ACTUAL && Date.now() - ultimoMovimiento > 7 * 60 * 1000){
-        debug("Timeout → logout automático");
-        await logout();
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
+            await logout();
+        }
     }
 }, 5000);
 
 window.onload = inicializar;
 </script>
+
+<div id="adminEscape"
+     style="position:fixed; bottom:0; right:0; width:60px; height:60px; opacity:0;"
+     onclick="AndroidApp.solicitarPinAdmin()">
+</div>
 
 </body>
 </html>
