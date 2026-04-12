@@ -56,14 +56,23 @@
 </div>
 
 <script>
+/* ================================
+   CONFIG FASTAPI
+================================ */
 const API = "http://192.168.2.33:8000";
+const API_PDAS = `${API}/pdas/`;
+const API_USUARIOS = `${API}/usuarios/`;
+const API_LOGIN = `${API}/logs/login`;
+const API_LOGOUT = `${API}/logs/logout`;
+const API_HEARTBEAT = `${API}/logs/heartbeat`;
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
+let LOGOUT_EN_PROCESO = false;
 
-/* ------------------------------
-   OBTENER ID DEL DISPOSITIVO
---------------------------------*/
+/* ================================
+   FUNCIONES AUXILIARES
+================================ */
 function getDeviceId(){
     if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
         try { return AndroidApp.getPdaId(); }
@@ -72,9 +81,6 @@ function getDeviceId(){
     return "TEST_PC";
 }
 
-/* ------------------------------
-   GEOLOCALIZACIÓN
---------------------------------*/
 async function getCoords(){
     return new Promise((resolve) => {
         if (!navigator.geolocation) return resolve({lat:0,lng:0});
@@ -86,36 +92,41 @@ async function getCoords(){
     });
 }
 
-/* ------------------------------
-   CARGAR PDA DESDE API PRIVADA
---------------------------------*/
+function showError(msg){
+    document.getElementById("error").innerText = msg;
+    document.getElementById("error").style.display = msg ? "block" : "none";
+}
+
+/* ================================
+   INIT → /pdas/{id}
+================================ */
 async function inicializar(){
     try {
-        let resp = await fetch(`${API}/pdas/?device=${encodeURIComponent(getDeviceId())}`);
+        const deviceId = getDeviceId();
+
+        let resp = await fetch(`${API_PDAS}${deviceId}`);
+        if (!resp.ok) throw new Error("No existe PDA");
+
         let data = await resp.json();
 
-        if (data && data.id){
-            PDA_NUMERO = data.id;
-            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
-            document.getElementById("loginBtn").disabled = false;
-        } else {
-            document.getElementById("pdaLabel").innerText = "No registrado";
-            showError("ID: " + getDeviceId() + "\nContacta con el jefe de almacén");
-        }
+        PDA_NUMERO = data.numPDA;
+        document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+        document.getElementById("loginBtn").disabled = false;
+
     } catch(e){
-        document.getElementById("pdaLabel").innerText = "Error conexión";
-        showError("Sin internet");
+        document.getElementById("pdaLabel").innerText = "No registrado";
+        showError("ID: " + getDeviceId() + "\nContacta con el jefe de almacén");
     }
 }
 
-/* ------------------------------
-   LOGIN REAL USANDO TU API
---------------------------------*/
+/* ================================
+   LOGIN → /usuarios/ + /logs/login
+================================ */
 async function login(){
     let u = document.getElementById("usuario").value.trim();
     let p = document.getElementById("pin").value;
 
-    if (!u || !p){
+    if (!u || !p || !PDA_NUMERO){
         showError("Complete todos los campos");
         return;
     }
@@ -125,76 +136,74 @@ async function login(){
     document.getElementById("loginBtn").disabled = true;
 
     try {
-        // 1) Validar usuario
-        let resp = await fetch(`${API}/usuarios/?usuario=${encodeURIComponent(u)}`);
-        let users = await resp.json();
+        // Buscar usuario
+        let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
+        let users = await respUser.json();
 
-        let user = users.find(x => x.usuario === u && x.pin == p);
-
-        if (!user){
-            showError("Usuario o PIN incorrecto");
+        if (!users.length){
+            showError("Usuario no encontrado");
             return;
         }
 
-        USUARIO_ACTUAL = u;
+        let user = users[0];
 
-        // 2) Registrar asignación
+        if (user.pin !== p){
+            showError("PIN incorrecto");
+            return;
+        }
+
+        // Registrar login
         let coords = await getCoords();
 
-        await fetch(`${API}/asignaciones/`, {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                usuario:u,
-                numPDA:PDA_NUMERO,
-                fecha:new Date().toISOString(),
-                lat:coords.lat,
-                lng:coords.lng
+        await fetch(API_LOGIN, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: u,
+                pda: PDA_NUMERO,
+                device: getDeviceId(),
+                lat: coords.lat,
+                lng: coords.lng
             })
         });
 
-        // 3) Registrar log login
-        await fetch(`${API}/logs/login`, {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                usuario:u,
-                pda:PDA_NUMERO,
-                device:getDeviceId(),
-                lat:coords.lat,
-                lng:coords.lng
-            })
-        });
-
+        USUARIO_ACTUAL = u;
         document.getElementById("login").style.display = "none";
         document.getElementById("menu").style.display = "block";
+        document.getElementById("pin").value = "";
 
     } catch(e){
         showError("Error de conexión");
     } finally {
-        document.getElementById("loading").style.display = "none";
         document.getElementById("loginBtn").disabled = false;
+        document.getElementById("loading").style.display = "none";
     }
 }
 
-/* ------------------------------
-   LOGOUT REAL
---------------------------------*/
+/* ================================
+   LOGOUT → /logs/logout
+================================ */
 async function logout(){
-    if (!USUARIO_ACTUAL) return location.reload();
+    if (LOGOUT_EN_PROCESO) return;
+    LOGOUT_EN_PROCESO = true;
+
+    if (!USUARIO_ACTUAL || !PDA_NUMERO){
+        location.reload();
+        return;
+    }
 
     let coords = await getCoords();
 
     try {
-        await fetch(`${API}/logs/logout`, {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                usuario:USUARIO_ACTUAL,
-                pda:PDA_NUMERO,
-                device:getDeviceId(),
-                lat:coords.lat,
-                lng:coords.lng
+        await fetch(API_LOGOUT, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: USUARIO_ACTUAL,
+                pda: PDA_NUMERO,
+                device: getDeviceId(),
+                lat: coords.lat,
+                lng: coords.lng
             })
         });
     } catch(e){}
@@ -203,36 +212,39 @@ async function logout(){
     location.reload();
 }
 
-/* ------------------------------
-   HEARTBEAT REAL
---------------------------------*/
-setInterval(async () => {
-    if (!USUARIO_ACTUAL) return;
+/* ================================
+   HEARTBEAT → /logs/heartbeat
+================================ */
+setInterval(() => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        fetch(API_HEARTBEAT, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+                usuario: USUARIO_ACTUAL,
+                pda: PDA_NUMERO,
+                device: getDeviceId()
+            }),
+            keepalive: true
+        });
+    }
+}, 30000);
 
-    await fetch(`${API}/logs/heartbeat`, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            usuario:USUARIO_ACTUAL,
-            pda:PDA_NUMERO,
-            device:getDeviceId()
-        })
-    });
-}, 60000);
-
-/* ------------------------------
-   TIMEOUT 7 MIN
---------------------------------*/
+/* ================================
+   IDLE TIMEOUT (7 minutos)
+================================ */
 let ultimoMovimiento = Date.now();
 ["touchstart","click","keydown","mousemove"].forEach(ev => 
     document.addEventListener(ev, () => ultimoMovimiento = Date.now())
 );
 
 setInterval(async () => {
-    if (USUARIO_ACTUAL && Date.now() - ultimoMovimiento > 7 * 60 * 1000){
-        await logout();
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
+            await logout();
+        }
     }
-}, 60000);
+}, 5000);
 
 window.onload = inicializar;
 </script>
