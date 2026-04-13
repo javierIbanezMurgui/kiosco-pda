@@ -34,8 +34,14 @@ button:disabled { background:#ccc; }
 
 <script>
 const API = "http://192.168.2.33:8000";
+const API_PDAS = `${API}/pdas/`;
+const API_USUARIOS = `${API}/usuarios/`;
+const API_LOGIN = `${API}/logs/login`;
+const API_LOGOUT = `${API}/logs/logout`;
+const API_HEARTBEAT = `${API}/logs/heartbeat`;
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
+let LOGOUT_EN_PROCESO = false;
 
 function getDeviceId(){
     return "DEVICE_STRING";
