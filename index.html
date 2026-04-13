@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" except="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Sistema PDA Aza</title>
 
 <style>
@@ -113,11 +113,19 @@
 </div>
 
 <script>
-// Configura aquí la URL base de tu API
-const API_BASE = "http://192.168.2.33:8000"; 
+/* ================================
+   CONFIG FASTAPI
+================================ */
+const API = "http://192.168.2.33:8000";
+const API_PDAS = `${API}/pdas/`;
+const API_USUARIOS = `${API}/usuarios/`;
+const API_LOGIN = `${API}/logs/login`;
+const API_LOGOUT = `${API}/logs/logout`;
+const API_HEARTBEAT = `${API}/logs/heartbeat`;
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
+let LOGOUT_EN_PROCESO = false;
 
 function getDeviceId(){
     if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
@@ -151,7 +159,7 @@ function handleImageCapture(input){
 async function inicializar(){
     try {
         // Obtener información de la PDA por device ID
-        let response = await fetch(`${API_BASE}/pdas/device/${encodeURIComponent(getDeviceId())}`);
+        let response = await fetch(`${API_PDAS}device/${encodeURIComponent(getDeviceId())}`);
         
         if (response.ok) {
             let data = await response.json();
@@ -185,12 +193,8 @@ async function login(){
     document.getElementById("loginBtn").disabled = true;
 
     try {
-        let coords = await getCoords();
-        
         // Verificar credenciales del usuario
-        let response = await fetch(`${API_BASE}/usuarios/`, {
-            method: "GET"
-        });
+        let response = await fetch(API_USUARIOS);
         
         if (!response.ok) {
             throw new Error("Error al obtener usuarios");
@@ -204,7 +208,8 @@ async function login(){
 
             // Registrar login
             try {
-                await fetch(`${API_BASE}/logs/login`, {
+                let coords = await getCoords();
+                await fetch(API_LOGIN, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
@@ -241,16 +246,17 @@ function showError(msg){
 }
 
 async function logout(){
-    if (!USUARIO_ACTUAL || !PDA_NUMERO){
-        location.reload();
+    if (LOGOUT_EN_PROCESO || (!USUARIO_ACTUAL && !PDA_NUMERO)) {
         return;
     }
+
+    LOGOUT_EN_PROCESO = true;
 
     let coords = await getCoords();
 
     try {
         // Registrar logout
-        await fetch(`${API_BASE}/logs/logout`, {
+        await fetch(API_LOGOUT, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
@@ -266,6 +272,7 @@ async function logout(){
     }
 
     USUARIO_ACTUAL = null;
+    LOGOUT_EN_PROCESO = false;
     location.reload();
 }
 
@@ -278,10 +285,10 @@ function abrirApp(pkg){
 }
 
 window.addEventListener("beforeunload", async () => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
+    if (USUARIO_ACTUAL && PDA_NUMERO && !LOGOUT_EN_PROCESO){
         try {
             let coords = await getCoords();
-            await fetch(`${API_BASE}/logs/logout`, {
+            await fetch(API_LOGOUT, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
@@ -293,14 +300,7 @@ window.addEventListener("beforeunload", async () => {
                 })
             });
         } catch(e) {
-            // Enviar beacon como fallback
-            navigator.sendBeacon(`${API_BASE}/logs/logout`, JSON.stringify({
-                usuario: USUARIO_ACTUAL,
-                pda: PDA_NUMERO,
-                device: getDeviceId(),
-                lat: 0,
-                lng: 0
-            }));
+            console.warn("Error en logout beforeunload:", e);
         }
     }
 });
@@ -311,8 +311,8 @@ window.onload = inicializar;
    HEARTBEAT CADA MINUTO
 --------------------------------*/
 setInterval(() => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
-        fetch(`${API_BASE}/logs/heartbeat`, {
+    if (USUARIO_ACTUAL && PDA_NUMERO && !LOGOUT_EN_PROCESO){
+        fetch(API_HEARTBEAT, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
@@ -331,7 +331,7 @@ let ultimoMovimiento = Date.now();
 );
 
 setInterval(async () => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
+    if (USUARIO_ACTUAL && PDA_NUMERO && !LOGOUT_EN_PROCESO){
         if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
             await logout();
         }
