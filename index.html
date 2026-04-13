@@ -2,20 +2,17 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sistema PDA Aza</title>
-
 <style>
-body { font-family: Arial; background: #f2f2f2; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-.card { background:white; padding:30px; border-radius:10px; width:90%; max-width:350px; text-align:center; box-shadow:0 5px 15px rgba(0,0,0,0.2);} 
-input,button { width:100%; padding:15px; margin:10px 0; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; font-size:16px; }
-button { background:#007bff; color:white; border:none; font-weight:bold; cursor:pointer; }
-button:disabled { background:#ccc; }
-#error { display:none; color:#dc3545; font-weight:bold; white-space:pre-line; }
-#menu { display:none; }
+body{font-family:Arial;background:#f2f2f2;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+.card{background:white;padding:30px;border-radius:10px;width:90%;max-width:350px;text-align:center;box-shadow:0 5px 15px rgba(0,0,0,0.2)}
+input,button{width:100%;padding:15px;margin:10px 0;border-radius:5px;border:1px solid #ccc;font-size:16px}
+button{background:#007bff;color:white;border:none;font-weight:bold}
+#error{display:none;color:#dc3545;font-weight:bold}
+#menu{display:none}
 </style>
 </head>
-
 <body>
 <div class="card">
 <h2 id="pdaLabel">Cargando...</h2>
@@ -39,116 +36,110 @@ const API_USUARIOS = `${API}/usuarios/`;
 const API_LOGIN = `${API}/logs/login`;
 const API_LOGOUT = `${API}/logs/logout`;
 const API_HEARTBEAT = `${API}/logs/heartbeat`;
+
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
 let LOGOUT_EN_PROCESO = false;
 
-function getDeviceId(){
-    return "DEVICE_STRING";
-}
+function getDeviceId(){ return "DEVICE_STRING"; }
 
 async function getCoords(){
-    return new Promise(resolve=>{
-        navigator.geolocation.getCurrentPosition(
-            p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
-            ()=>resolve({lat:0,lng:0})
-        );
-    });
-}
+return new Promise(resolve=>{
+ navigator.geolocation.getCurrentPosition(
+  p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
+  ()=>resolve({lat:0,lng:0})
+ );
+});}
 
 async function inicializar(){
-    try{
-        let resp = await fetch(API+"/pdas/");
-        let data = await resp.json();
+try{
+ let device = getDeviceId();
+ let resp = await fetch(`${API_PDAS}device/${device}`);
+ let data = await resp.json();
 
-        if(data.length>0){
-            PDA_NUMERO = parseInt(data[0].id);
-            document.getElementById("pdaLabel").innerText = "PDA "+PDA_NUMERO;
-        }else{
-            document.getElementById("pdaLabel").innerText = "Sin PDAs";
-        }
-    }catch(e){
-        document.getElementById("pdaLabel").innerText = "Error conexión";
-    }
+ PDA_NUMERO = parseInt(data.numPDA);
+ document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+}catch(e){
+ document.getElementById("pdaLabel").innerText = "No registrado";
+}
 }
 
 async function login(){
-    let u = document.getElementById("usuario").value;
-    let p = document.getElementById("pin").value;
+let u = document.getElementById("usuario").value;
+let p = document.getElementById("pin").value;
+if(!u || !p) return showError("Campos obligatorios");
 
-    if(!u || !p) return showError("Campos obligatorios");
+try{
+ let resp = await fetch(`${API_USUARIOS}?usuario=${u}`);
+ let data = await resp.json();
 
-    try{
-        let resp = await fetch(API+`/usuarios/?usuario=${u}`);
-        let data = await resp.json();
+ if(data.length>0){
+  USUARIO_ACTUAL = u;
 
-        if(data.length>0){
-            USUARIO_ACTUAL = u;
+  let coords = await getCoords();
 
-            let coords = await getCoords();
+  await fetch(API_LOGIN,{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    usuario:u,
+    pda:PDA_NUMERO,
+    device:getDeviceId(),
+    lat:coords.lat,
+    lng:coords.lng
+   })
+  });
 
-            await fetch(API+"/logs/login",{
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({
-                    usuario:u,
-                    pda:PDA_NUMERO,
-                    device:getDeviceId(),
-                    lat:coords.lat,
-                    lng:coords.lng
-                })
-            });
-
-            document.getElementById("login").style.display="none";
-            document.getElementById("menu").style.display="block";
-        }else{
-            showError("Usuario no encontrado");
-        }
-    }catch(e){
-        showError("Error conexión");
-    }
+  document.getElementById("login").style.display="none";
+  document.getElementById("menu").style.display="block";
+ }else{
+  showError("Usuario no encontrado");
+ }
+}catch(e){ showError("Error conexión"); }
 }
 
 async function logout(){
-    let coords = await getCoords();
+if(LOGOUT_EN_PROCESO) return;
+LOGOUT_EN_PROCESO = true;
 
-    await fetch(API+"/logs/logout",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            usuario:USUARIO_ACTUAL,
-            pda:PDA_NUMERO,
-            device:getDeviceId(),
-            lat:coords.lat,
-            lng:coords.lng
-        })
-    });
+let coords = await getCoords();
 
-    location.reload();
+await fetch(API_LOGOUT,{
+ method:"POST",
+ headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({
+  usuario:USUARIO_ACTUAL,
+  pda:PDA_NUMERO,
+  device:getDeviceId(),
+  lat:coords.lat,
+  lng:coords.lng
+ })
+});
+
+location.reload();
 }
 
 function showError(msg){
-    let el=document.getElementById("error");
-    el.innerText=msg;
-    el.style.display=msg?"block":"none";
+let el=document.getElementById("error");
+el.innerText=msg;
+el.style.display=msg?"block":"none";
 }
 
 setInterval(()=>{
-    if(USUARIO_ACTUAL && PDA_NUMERO){
-        fetch(API+"/logs/heartbeat",{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                usuario:USUARIO_ACTUAL,
-                pda:PDA_NUMERO,
-                device:getDeviceId()
-            })
-        });
-    }
+if(USUARIO_ACTUAL && PDA_NUMERO){
+ fetch(API_HEARTBEAT,{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+   usuario:USUARIO_ACTUAL,
+   pda:PDA_NUMERO,
+   device:getDeviceId()
+  })
+ });
+}
 },60000);
 
 window.onload = inicializar;
 </script>
-
 </body>
 </html>
