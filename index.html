@@ -147,25 +147,41 @@ function showError(msg){
 }
 
 /* ================================
-   INIT → /pdas/{id}
+   INIT → /pdas/device/{device}
 ================================ */
 async function inicializar(){
     try {
-        const deviceId = getDeviceId();
+        let deviceId = getDeviceId();
+        deviceId = deviceId.trim().toUpperCase();
+        const encoded = encodeURIComponent(deviceId);
 
-       let resp = await fetch(`${API_PDAS}device/${deviceId}`);
+        // Intento principal
+        let resp = await fetch(`${API_PDAS}device/${encoded}`);
 
-        if (!resp.ok) throw new Error("No existe PDA");
+        if (!resp.ok) {
+            // Intento alternativo: buscar todas las PDAs
+            let respAll = await fetch(API_PDAS);
+            let all = await respAll.json();
+
+            let match = all.find(p => p.device && p.device.trim().toUpperCase() === deviceId);
+
+            if (!match) throw new Error("No existe PDA");
+
+            PDA_NUMERO = match.numPDA;
+            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+            document.getElementById("loginBtn").disabled = false;
+            return;
+        }
 
         let data = await resp.json();
-
         PDA_NUMERO = data.numPDA;
+
         document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
         document.getElementById("loginBtn").disabled = false;
 
     } catch(e){
         document.getElementById("pdaLabel").innerText = "No registrado";
-        showError("ID: " + getDeviceId() + "\nContacta con el jefe de almacén");
+        showError("ID detectado: " + getDeviceId() + "\nNo coincide con ninguna PDA registrada.");
     }
 }
 
@@ -186,7 +202,6 @@ async function login(){
     document.getElementById("loginBtn").disabled = true;
 
     try {
-        // Buscar usuario
         let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
         let users = await respUser.json();
 
@@ -202,7 +217,6 @@ async function login(){
             return;
         }
 
-        // Registrar login
         let coords = await getCoords();
 
         await fetch(API_LOGIN, {
