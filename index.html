@@ -153,7 +153,8 @@ async function inicializar(){
     try {
         const deviceId = getDeviceId();
 
-        let resp = await fetch(`${API_PDAS}${deviceId}`);
+       let resp = await fetch(`${API_PDAS}device/${deviceId}`);
+
         if (!resp.ok) throw new Error("No existe PDA");
 
         let data = await resp.json();
