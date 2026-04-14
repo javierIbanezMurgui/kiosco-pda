@@ -152,11 +152,16 @@ function showError(msg){
 async function inicializar(){
     try {
         let deviceId = getDeviceId();
+
+        // 🔥 DEBUG: Mostrar el ID REAL que devuelve la PDA
+        alert("ID REAL QUE ENVÍA LA PDA: [" + deviceId + "]");
+
         deviceId = deviceId.trim().toUpperCase();
         const encoded = encodeURIComponent(deviceId);
 
         // Intento principal
         let resp = await fetch(`${API_PDAS}device/${encoded}`);
+
 
         if (!resp.ok) {
             // Intento alternativo: buscar todas las PDAs
