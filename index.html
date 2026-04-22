@@ -62,8 +62,17 @@
     .btn-logout {
         background: #dc3545 !important;
     }
+    button:active {
+        transform: scale(0.95);
+    }
+    .btn-logout:active {
+        background: #a71d2a !important;
+    }
     .btn-secondary {
         background: #6c757d !important;
+    }
+    .btn-secondary:active {
+        background: #545b62 !important;
     }
 </style>
 </head>
@@ -87,9 +96,7 @@
     </div>
 
     <div id="menu">
-
         <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
-
         <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
         <button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
         <button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
@@ -105,23 +112,14 @@
 </div>
 
 <script>
-/* ================================
-   CONFIG FASTAPI
-================================ */
-const API = "http://192.168.2.33:8000";
-const API_PDAS = `${API}/pdas/`;
-const API_USUARIOS = `${API}/usuarios/`;
-const API_LOGIN = `${API}/logs/login`;
-const API_LOGOUT = `${API}/logs/logout`;
-const API_HEARTBEAT = `${API}/logs/heartbeat`;
+// ============================================
+// CONFIGURACIÓN - URL base de tu API FastAPI
+// ============================================
+const API = "http://192.168.2.33:8000/api"; 
 
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
-let LOGOUT_EN_PROCESO = false;
 
-/* ================================
-   FUNCIONES AUXILIARES
-================================ */
 function getDeviceId(){
     if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
         try { return AndroidApp.getPdaId(); }
@@ -141,58 +139,54 @@ async function getCoords(){
     });
 }
 
-function showError(msg){
-    document.getElementById("error").innerText = msg;
-    document.getElementById("error").style.display = msg ? "block" : "none";
-}
-
-/* ================================
-   INIT → /pdas/device/{device}
-================================ */
-async function inicializar(){
-    try {
-        let deviceId = getDeviceId();
-
-        // 🔥 DEBUG: Mostrar el ID REAL que devuelve la PDA
-        alert("ID REAL QUE ENVÍA LA PDA: [" + deviceId + "]");
-
-        deviceId = deviceId.trim().toUpperCase();
-        const encoded = encodeURIComponent(deviceId);
-
-        // Intento principal
-        let resp = await fetch(`${API_PDAS}device/${encoded}`);
-
-
-        if (!resp.ok) {
-            // Intento alternativo: buscar todas las PDAs
-            let respAll = await fetch(API_PDAS);
-            let all = await respAll.json();
-
-            let match = all.find(p => p.device && p.device.trim().toUpperCase() === deviceId);
-
-            if (!match) throw new Error("No existe PDA");
-
-            PDA_NUMERO = match.numPDA;
-            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
-            document.getElementById("loginBtn").disabled = false;
-            return;
-        }
-
-        let data = await resp.json();
-        PDA_NUMERO = data.numPDA;
-
-        document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
-        document.getElementById("loginBtn").disabled = false;
-
-    } catch(e){
-        document.getElementById("pdaLabel").innerText = "No registrado";
-        showError("ID detectado: " + getDeviceId() + "\nNo coincide con ninguna PDA registrada.");
+function handleImageCapture(input){
+    const file = input.files[0];
+    if (file){
+        const reader = new FileReader();
+        reader.onload = () => alert("Imagen lista: " + file.name);
+        reader.readAsDataURL(file);
+        input.value = "";
     }
 }
 
-/* ================================
-   LOGIN → /usuarios/ + /logs/login
-================================ */
+// ============================================
+// INICIALIZAR - GET /pdas/device/{device}
+// ============================================
+async function inicializar(){
+    try {
+        let resp = await fetch(`${API}/pdas/device/${encodeURIComponent(getDeviceId())}`);
+        
+        if (!resp.ok) {
+            if (resp.status === 404) {
+                document.getElementById("pdaLabel").innerText = "No registrado";
+                showError("ID: " + getDeviceId() + "\nContacta con el jefe de almacén");
+                return;
+            }
+            throw new Error("HTTP " + resp.status);
+        }
+
+        let data = await resp.json();
+        
+        if (data.numPDA) {
+            PDA_NUMERO = data.numPDA;
+            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+            document.getElementById("loginBtn").disabled = false;
+        } else {
+            document.getElementById("pdaLabel").innerText = "No registrado";
+            showError("PDA sin número asignado\nContacta con el jefe de almacén");
+        }
+    } catch(e){
+        document.getElementById("pdaLabel").innerText = "Error conexión";
+        showError("Sin internet o servidor no disponible");
+        console.error(e);
+    }
+}
+
+// ============================================
+// LOGIN - Validar usuario + log entrada
+// GET /usuarios/?usuario={user}  (query param, no path)
+// POST /logs/login               (JSON body)
+// ============================================
 async function login(){
     let u = document.getElementById("usuario").value.trim();
     let p = document.getElementById("pin").value;
@@ -202,60 +196,87 @@ async function login(){
         return;
     }
 
+    let pinNumerico = parseInt(p, 10);
+    if (isNaN(pinNumerico)) {
+        showError("El PIN debe ser numérico");
+        return;
+    }
+
     showError("");
     document.getElementById("loading").style.display = "block";
     document.getElementById("loginBtn").disabled = true;
 
     try {
-        let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
-        let users = await respUser.json();
-
-        if (!users.length){
+        // 1. Buscar usuario por query param (endpoint: GET /usuarios/?usuario=xxx)
+        let respUser = await fetch(`${API}/usuarios/?usuario=${encodeURIComponent(u)}`);
+        
+        if (!respUser.ok) throw new Error("Error consultando usuario");
+        
+        let usuarios = await respUser.json();
+        
+        // La API devuelve array, buscar coincidencia exacta
+        let usuarioData = Array.isArray(usuarios) ? usuarios.find(us => us.usuario === u) : null;
+        
+        if (!usuarioData) {
             showError("Usuario no encontrado");
+            document.getElementById("pin").value = "";
             return;
         }
-
-        let user = users[0];
-
-        if (user.pin !== p){
+        
+        // Validar PIN (API devuelve integer)
+        if (usuarioData.pin !== pinNumerico) {
             showError("PIN incorrecto");
+            document.getElementById("pin").value = "";
             return;
         }
 
+        // 2. Obtener coordenadas
         let coords = await getCoords();
 
-        await fetch(API_LOGIN, {
+        // 3. Registrar login - POST /logs/login (JSON según schema LoginPayload)
+        let loginPayload = {
+            usuario: u,
+            pda: PDA_NUMERO,
+            device: getDeviceId(),
+            lat: coords.lat,
+            lng: coords.lng
+        };
+
+        let respLog = await fetch(`${API}/logs/login`, {
             method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({
-                usuario: u,
-                pda: PDA_NUMERO,
-                device: getDeviceId(),
-                lat: coords.lat,
-                lng: coords.lng
-            })
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(loginPayload)
         });
 
+        if (!respLog.ok) {
+            let errText = await respLog.text();
+            console.warn("Log login warning:", respLog.status, errText);
+        }
+
+        // 4. Login exitoso
         USUARIO_ACTUAL = u;
         document.getElementById("login").style.display = "none";
         document.getElementById("menu").style.display = "block";
         document.getElementById("pin").value = "";
 
     } catch(e){
-        showError("Error de conexión");
+        showError("Error de conexión o servidor");
+        console.error(e);
     } finally {
         document.getElementById("loginBtn").disabled = false;
         document.getElementById("loading").style.display = "none";
     }
 }
 
-/* ================================
-   LOGOUT → /logs/logout
-================================ */
-async function logout(){
-    if (LOGOUT_EN_PROCESO) return;
-    LOGOUT_EN_PROCESO = true;
+function showError(msg){
+    document.getElementById("error").innerText = msg;
+    document.getElementById("error").style.display = msg ? "block" : "none";
+}
 
+// ============================================
+// LOGOUT - POST /logs/logout (JSON body)
+// ============================================
+async function logout(){
     if (!USUARIO_ACTUAL || !PDA_NUMERO){
         location.reload();
         return;
@@ -263,45 +284,78 @@ async function logout(){
 
     let coords = await getCoords();
 
-    try {
-        await fetch(API_LOGOUT, {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({
-                usuario: USUARIO_ACTUAL,
-                pda: PDA_NUMERO,
-                device: getDeviceId(),
-                lat: coords.lat,
-                lng: coords.lng
-            })
-        });
-    } catch(e){}
+    let logoutPayload = {
+        usuario: USUARIO_ACTUAL,
+        pda: PDA_NUMERO,
+        device: getDeviceId(),
+        lat: coords.lat,
+        lng: coords.lng
+    };
 
-    USUARIO_ACTUAL = null;
-    location.reload();
+    try {
+        await fetch(`${API}/logs/logout`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(logoutPayload)
+        });
+    } catch(e){
+        console.error("Error enviando logout:", e);
+    } finally {
+        USUARIO_ACTUAL = null;
+        location.reload();
+    }
 }
 
-/* ================================
-   HEARTBEAT → /logs/heartbeat
-================================ */
+function abrirApp(pkg){
+    if (typeof AndroidApp !== "undefined" && AndroidApp.abrirApp){
+        try { AndroidApp.abrirApp(pkg); return; }
+        catch(e){}
+    }
+    window.location.href = `intent:#Intent;package=${pkg};launchFlags=0x10000000;end`;
+}
+
+// ============================================
+// BEFOREUNLOAD - sendBeacon POST /logs/logout
+//
+ ============================================
+window.addEventListener("beforeunload", () => {
+    if (USUARIO_ACTUAL && PDA_NUMERO){
+        let logoutPayload = {
+            usuario: USUARIO_ACTUAL,
+            pda: PDA_NUMERO,
+            device: getDeviceId(),
+            lat: 0,
+            lng: 0
+        };
+        navigator.sendBeacon(
+            `${API}/logs/logout`,
+            new Blob([JSON.stringify(logoutPayload)], {type: "application/json"})
+        );
+    }
+});
+
+window.onload = inicializar;
+
+// ============================================
+// HEARTBEAT - POST /logs/heartbeat (JSON body)
+// ============================================
 setInterval(() => {
     if (USUARIO_ACTUAL && PDA_NUMERO){
-        fetch(API_HEARTBEAT, {
+        let heartbeatPayload = {
+            usuario: USUARIO_ACTUAL,
+            pda: PDA_NUMERO,
+            device: getDeviceId()
+        };
+        
+        fetch(`${API}/logs/heartbeat`, {
             method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({
-                usuario: USUARIO_ACTUAL,
-                pda: PDA_NUMERO,
-                device: getDeviceId()
-            }),
-            keepalive: true
-        });
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(heartbeatPayload)
+        }).catch(e => console.error("Heartbeat failed:", e));
     }
-}, 30000);
+}, 60000);
 
-/* ================================
-   IDLE TIMEOUT (7 minutos)
-================================ */
+// IDLE TIMEOUT (7 minutos)
 let ultimoMovimiento = Date.now();
 ["touchstart","click","keydown","mousemove"].forEach(ev => 
     document.addEventListener(ev, () => ultimoMovimiento = Date.now())
@@ -313,9 +367,7 @@ setInterval(async () => {
             await logout();
         }
     }
-}, 5000);
-
-window.onload = inicializar;
+}, 60000);
 </script>
 
 <div id="adminEscape"
