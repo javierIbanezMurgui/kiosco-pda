@@ -156,7 +156,7 @@ async function inicializar(){
 try {
  
         let deviceId = getDeviceId();
-        deviceId = deviceId.trim().toUpperCase();
+        deviceId = deviceId.trim().toLowerCase();
         const encoded = encodeURIComponent(deviceId);
 
 
@@ -170,7 +170,7 @@ try {
             let all = await respAll.json();
 
  
-            let match = all.find(p => p.device && p.device.trim().toUpperCase() === deviceId);
+            let match = all.find(p => p.device && p.device.trim().toLowerCase() === deviceId);
 
             if (!match) throw new Error("No existe PDA");
 
