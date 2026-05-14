@@ -6,322 +6,315 @@
 <title>Sistema PDA Aza</title>
 
 <style>
-    body { 
-        font-family: Arial; 
-        background: #f2f2f2; 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        height: 100vh; 
-        margin: 0; 
-    }
-    .card { 
-        background: white; 
-        padding: 30px; 
-        border-radius: 10px; 
-        width: 90%; 
-        max-width: 350px; 
-        text-align: center; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
-    }
-    input, button { 
-        width: 100%; 
-        padding: 15px; 
-        margin: 10px 0; 
-        border-radius: 5px; 
-        border: 1px solid #ccc; 
-        box-sizing: border-box; 
-        font-size: 16px;
-    }
-    button { 
-        background: #007bff; 
-        color: white; 
-        border: none; 
-        font-size: 16px; 
-        font-weight: bold; 
-        cursor: pointer;
-    }
-    button:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-    }
-    #menu, #error { 
-        display: none; 
-        margin-top: 20px; 
-    }
-    #error {
-        color: #dc3545;
-        font-weight: bold;
-        white-space: pre-line;
-    }
-    .logo-img {
-        max-width: 150px;
-        height: auto;
-        margin-bottom: 20px;
-    }
-    .btn-logout {
-        background: #dc3545 !important;
-    }
-    button:active {
-        transform: scale(0.95);
-    }
-    .btn-logout:active {
-        background: #a71d2a !important;
-    }
-    .btn-secondary {
-        background: #6c757d !important;
-    }
-    .btn-secondary:active {
-        background: #545b62 !important;
-    }
+body { 
+font-family: Arial; 
+background: #f2f2f2; 
+display: flex; 
+justify-content: center; 
+align-items: center; 
+height: 100vh; 
+margin: 0; 
+}
+.card { 
+background: white; 
+padding: 30px; 
+border-radius: 10px; 
+width: 90%; 
+max-width: 350px; 
+text-align: center; 
+box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+}
+input, button { 
+width: 100%; 
+padding: 15px; 
+margin: 10px 0; 
+border-radius: 5px; 
+border: 1px solid #ccc; 
+box-sizing: border-box; 
+font-size: 16px;
+}
+button { 
+background: #007bff; 
+color: white; 
+border: none; 
+font-size: 16px; 
+font-weight: bold; 
+cursor: pointer;
+}
+button:disabled {
+background: #ccc;
+cursor: not-allowed;
+}
+#menu, #error { 
+display: none; 
+margin-top: 20px; 
+}
+#error {
+color: #dc3545;
+font-weight: bold;
+white-space: pre-line;
+}
+.logo-img {
+max-width: 150px;
+height: auto;
+margin-bottom: 20px;
+}
+.btn-logout {
+background: #dc3545 !important;
+}
+.btn-secondary {
+background: #6c757d !important;
+}
 </style>
 </head>
 <body>
 
 <div class="card">
-    <img src="aza-logistics.png" class="logo-img" alt="Aza Logistics" onerror="this.style.display='none'">
+<img src="aza-logistics.png" class="logo-img" alt="Aza Logistics" onerror="this.style.display='none'">
 
-    <h2 id="pdaLabel">Cargando...</h2>
+<h2 id="pdaLabel">Cargando...</h2>
 
-    <div id="login">
-        <input id="usuario" placeholder="Usuario" autocomplete="username">
-        <input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
-        <button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
+<div id="login">
+<input id="usuario" placeholder="Usuario" autocomplete="username">
+<input id="pin" placeholder="PIN" type="password" autocomplete="current-password">
+<button id="loginBtn" onclick="login()" disabled>Iniciar sesión</button>
 
-        <div id="error"></div>
+<div id="error"></div>
 
-        <div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
-            Iniciando sesión...
-        </div>
-    </div>
+<div id="loading" style="display:none; color:#007bff; font-weight:bold; margin-top:10px;">
+Iniciando sesión...
+</div>
+</div>
 
-    <div id="menu">
+<div id="menu">
 
-        <button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
+<button onclick="window.location.href='http://192.168.2.20/Planificador/login.php?entorno=cdmuelles'">🚚 CD Muelles</button>
 
-        <button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
-        <button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
+<button onclick="AndroidApp.abrirApp('es.tlsi.whales.android')">📦 Whales</button>
+<button onclick="AndroidApp.abrirApp('com.datalogic.scan2deploy')">📦 Scan2deploy</button>
+<button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+<button onclick="AndroidApp.abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
 
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(this)">
+<button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galeria</button>
 
-        <button onclick="AndroidApp.abrirApp('com.azalogistics.aza_scanner')">📦 Scan</button>
+<button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
 
-        <button onclick="AndroidApp.abrirApp('es.tlsi.mobile')">📦 Whales nuevo</button>
-
-
-        <button
-
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(this)">
-        <button onclick="document.getElementById('cameraInput').click()" class="btn-secondary">📷 Cámara/Galeria</button>
-
-        <button onclick="window.location.href='https://azalogisticsextranet.activalink.com/views/login/'">🚚 ActivaLink</button>
-
-        <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
-    </div>
+<button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+</div>
 </div>
 
 <script>
-// ============================================
-// CONFIGURACIÓN API FASTAPI - AZA LOGISTICS
-// ============================================
-const API_BASE_URL = "http://192.168.2.33:8000";
+/* FASTAPI */
+const API = "http://192.168.2.33:8000";
+const API_PDAS = `${API}/pdas/`;
+const API_USUARIOS = `${API}/usuarios/`;
+const API_LOGIN = `${API}/logs/login`;
+const API_LOGOUT = `${API}/logs/logout`;
+const API_HEARTBEAT = `${API}/logs/heartbeat`;
 
-// Endpoints de tu API FastAPI
-const API = {
-    init: `${API_BASE_URL}/pdas/device`,
-    login: `${API_BASE_URL}/logs/login`,
-    logout: `${API_BASE_URL}/logs/logout`,
-    heartbeat: `${API_BASE_URL}/logs/heartbeat`
-};
-
-// ============================================
-// VARIABLES GLOBALES
-// ============================================
 let USUARIO_ACTUAL = null;
 let PDA_NUMERO = null;
-let PDA_DATA = null;
+let LOGOUT_EN_PROCESO = false;
 
-// ============================================
-// FUNCIONES DE DISPOSITIVO
-// ============================================
+
+/*  FUNCIONES AUXILIARES*/
+
 function getDeviceId(){
-    return AndroidApp.getPdaId();
+if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
+try { return AndroidApp.getPdaId(); }
+catch(e) { return "WEB_ERROR"; }
+}
+return "TEST_PC";
 }
 
 async function getCoords(){
-    return new Promise((resolve) => {
-        if (!navigator.geolocation) return resolve({lat:0,lng:0});
-        navigator.geolocation.getCurrentPosition(
-            p => resolve({lat:p.coords.latitude, lng:p.coords.longitude}),
-            () => resolve({lat:0,lng:0}),
-            {timeout:5000, enableHighAccuracy:true}
-        );
-    });
-}
-
-function handleImageCapture(input){
-    const file = input.files[0];
-    if (file){
-        const reader = new FileReader();
-        reader.onload = () => alert("Imagen lista: " + file.name);
-        reader.readAsDataURL(file);
-        input.value = "";
-    }
-}
-
-// ============================================
-// FUNCIONES API
-// ============================================
-async function apiPost(url, data) {
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(data)
-    });
-    return await response.json();
-}
-
-async function apiGet(url) {
-    const response = await fetch(url);
-    return await response.json();
-}
-
-// ============================================
-// INICIALIZACIÓN
-// ============================================
-async function inicializar(){
-    try {
-        const data = await apiGet(`${API.init}/${getDeviceId()}`);
-
-        if (data && data.id) {
-            PDA_DATA = data;
-            PDA_NUMERO = data.numPDA;
-            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
-            document.getElementById("loginBtn").disabled = false;
-        } else {
-            document.getElementById("pdaLabel").innerText = "No registrado";
-            showError("ID: " + getDeviceId() + "\nContacta con el jefe de almacén");
-        }
-    } catch(e){
-        document.getElementById("pdaLabel").innerText = "Error conexión";
-        showError("Sin conexión al servidor");
-    }
-}
-
-// ============================================
-// LOGIN
-// ============================================
-async function login(){
-    let u = document.getElementById("usuario").value.trim();
-    let p = document.getElementById("pin").value;
-
-    if (!u || !p){
-        showError("Complete todos los campos");
-        return;
-    }
-
-    if (!PDA_NUMERO){
-        showError("PDA no inicializada");
-        return;
-    }
-
-    showError("");
-
-    document.getElementById("loading").style.display = "block";
-    document.getElementById("loginBtn").disabled = true;
-
-    try {
-        let coords = await getCoords();
-
-        await apiPost(API.login, {
-            usuario: u,
-            pda: PDA_NUMERO,
-            device: getDeviceId(),
-            lat: coords.lat,
-            lng: coords.lng
-        });
-
-        USUARIO_ACTUAL = u;
-
-        document.getElementById("login").style.display = "none";
-        document.getElementById("menu").style.display = "block";
-
-        document.getElementById("pin").value = "";
-    } catch(e){
-        showError("Error de conexión con el servidor");
-    } finally {
-        document.getElementById("loginBtn").disabled = false;
-        document.getElementById("loading").style.display = "none";
-    }
+return new Promise((resolve) => {
+if (!navigator.geolocation) return resolve({lat:0,lng:0});
+navigator.geolocation.getCurrentPosition(
+p => resolve({lat:p.coords.latitude, lng:p.coords.longitude}),
+() => resolve({lat:0,lng:0}),
+{timeout:5000, enableHighAccuracy:true}
+);
+});
 }
 
 function showError(msg){
-    document.getElementById("error").innerText = msg;
-    document.getElementById("error").style.display = msg ? "block" : "none";
+document.getElementById("error").innerText = msg;
+document.getElementById("error").style.display = msg ? "block" : "none";
 }
 
-// ============================================
-// LOGOUT
-// ============================================
+
+
+   INIT → /pdas/device/{device}
+
+async function inicializar(){
+try {
+ 
+        let deviceId = getDeviceId();
+        deviceId = deviceId.trim().toUpperCase();
+        const encoded = encodeURIComponent(deviceId);
+
+
+    
+        let resp = await fetch(`${API_PDAS}device/${encoded}`);
+
+
+        if (!resp.ok) {
+    
+            let respAll = await fetch(API_PDAS);
+            let all = await respAll.json();
+
+ 
+            let match = all.find(p => p.device && p.device.trim().toUpperCase() === deviceId);
+
+            if (!match) throw new Error("No existe PDA");
+
+            PDA_NUMERO = match.numPDA;
+            document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+            document.getElementById("loginBtn").disabled = false;
+            return;
+        }
+
+        let data = await resp.json();
+PDA_NUMERO = data.numPDA;
+
+document.getElementById("pdaLabel").innerText = "PDA " + PDA_NUMERO;
+document.getElementById("loginBtn").disabled = false;
+
+} catch(e){
+document.getElementById("pdaLabel").innerText = "No registrado";
+
+        showError("ID detectado: " + getDeviceId() + "\nNo coincide con ninguna PDA registrada.");
+}
+}
+
+// LOGIN 
+async function login(){
+let u = document.getElementById("usuario").value.trim();
+let p = document.getElementById("pin").value;
+
+if (!u || !p || !PDA_NUMERO){
+showError("Complete todos los campos");
+return;
+}
+
+showError("");
+document.getElementById("loading").style.display = "block";
+document.getElementById("loginBtn").disabled = true;
+
+try {
+ // Buscar usuario
+let respUser = await fetch(`${API_USUARIOS}?usuario=${encodeURIComponent(u)}`);
+let users = await respUser.json();
+
+if (!users.length){
+showError("Usuario no encontrado");
+return;
+}
+
+let user = users[0];
+
+if (user.pin !== p){
+showError("PIN incorrecto");
+return;
+}
+
+        // Registrar login
+let coords = await getCoords();
+
+await fetch(API_LOGIN, {
+method: "POST",
+headers: {"Content-Type":"application/json"},
+body: JSON.stringify({
+usuario: u,
+pda: PDA_NUMERO,
+device: getDeviceId(),
+lat: coords.lat,
+lng: coords.lng
+})
+});
+
+USUARIO_ACTUAL = u;
+document.getElementById("login").style.display = "none";
+document.getElementById("menu").style.display = "block";
+document.getElementById("pin").value = "";
+
+} catch(e){
+showError("Error de conexión");
+} finally {
+document.getElementById("loginBtn").disabled = false;
+document.getElementById("loading").style.display = "none";
+}
+}
+
+/* LOGOUT  */
 async function logout(){
-    if (!USUARIO_ACTUAL || !PDA_NUMERO){
-        location.reload();
-        return;
-    }
+if (LOGOUT_EN_PROCESO) return;
+LOGOUT_EN_PROCESO = true;
 
-    let coords = await getCoords();
-
-    try {
-        await apiPost(API.logout, {
-            usuario: USUARIO_ACTUAL,
-            pda: PDA_NUMERO,
-            device: getDeviceId(),
-            lat: coords.lat,
-            lng: coords.lng
-        });
-    } catch(e){}
-
-    USUARIO_ACTUAL = null;
-    location.reload();
+if (!USUARIO_ACTUAL || !PDA_NUMERO){
+location.reload();
+return;
 }
 
-// ============================================
-// HEARTBEAT CADA 60 SEGUNDOS
-// ============================================
-setInterval(() => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
-        fetch(API.heartbeat, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                usuario: USUARIO_ACTUAL,
-                pda: PDA_NUMERO,
-                device: getDeviceId()
-            })
-        }).catch(() => {});
-    }
-}, 60000);
+let coords = await getCoords();
 
-// ============================================
-// IDLE TIMEOUT (7 minutos)
-// ============================================
+try {
+await fetch(API_LOGOUT, {
+method: "POST",
+headers: {"Content-Type":"application/json"},
+body: JSON.stringify({
+usuario: USUARIO_ACTUAL,
+pda: PDA_NUMERO,
+device: getDeviceId(),
+lat: coords.lat,
+lng: coords.lng
+})
+});
+} catch(e){}
+
+USUARIO_ACTUAL = null;
+location.reload();
+}
+
+/* SEÑAL INACTIVIDAD */
+setInterval(() => {
+if (USUARIO_ACTUAL && PDA_NUMERO){
+fetch(API_HEARTBEAT, {
+method: "POST",
+headers: {"Content-Type":"application/json"},
+body: JSON.stringify({
+usuario: USUARIO_ACTUAL,
+pda: PDA_NUMERO,
+device: getDeviceId()
+}),
+keepalive: true
+});
+}
+}, 30000);
+
+/* Tiempo de espera (7 minutos) */
 let ultimoMovimiento = Date.now();
 ["touchstart","click","keydown","mousemove"].forEach(ev => 
-    document.addEventListener(ev, () => ultimoMovimiento = Date.now())
+document.addEventListener(ev, () => ultimoMovimiento = Date.now())
 );
 
 setInterval(async () => {
-    if (USUARIO_ACTUAL && PDA_NUMERO){
-        if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
-            await logout();
-        }
-    }
-}, 60000);
+if (USUARIO_ACTUAL && PDA_NUMERO){
+if (Date.now() - ultimoMovimiento > 7 * 60 * 1000){
+await logout();
+}
+}
+}, 5000);
 
-// ============================================
-// INICIALIZAR
-// ============================================
 window.onload = inicializar;
 </script>
+
+<div id="adminEscape"
+style="position:fixed; bottom:0; right:0; width:60px; height:60px; opacity:0;"
+onclick="AndroidApp.solicitarPinAdmin()">
+</div>
 
 </body>
 </html>
