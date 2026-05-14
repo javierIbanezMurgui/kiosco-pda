@@ -121,12 +121,16 @@ let LOGOUT_EN_PROCESO = false;
 /*  FUNCIONES AUXILIARES*/
 
 function getDeviceId(){
-if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
-try { return AndroidApp.getPdaId(); }
-catch(e) { return "WEB_ERROR"; }
+    if (typeof AndroidApp !== "undefined" && AndroidApp.getPdaId) {
+        try { 
+            return AndroidApp.getPdaId(); 
+        } catch(e) { 
+            return "ID_ERROR"; 
+        }
+    }
+    return "NO_PDA";
 }
-return "TEST_PC";
-}
+
 
 async function getCoords(){
 return new Promise((resolve) => {
