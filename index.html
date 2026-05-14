@@ -190,10 +190,7 @@ document.getElementById("loginBtn").disabled = false;
 document.getElementById("pdaLabel").innerText = "No registrado";
 
       
-    showError(
-    "ID detectado por la PDA:\n\n[" + getDeviceId() + "]\n\n" +
-    "Copia este valor EXACTO en la base de datos."
-);
+     showError("ID detectado: " + getDeviceId() + "\nNo coincide con ninguna PDA registrada.");
 }
 }
 
